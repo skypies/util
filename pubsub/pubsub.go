@@ -39,10 +39,17 @@ func GetLocalContext(projectName string) context.Context {
 }
 
 // }}}
-// {{{ PurgeSub
+// {{{ DeleteSub, CreateSub, PurgeSub
+
+func DeleteSub (c context.Context, subscription string) error {
+	return pubsub.DeleteSub(c, subscription)
+}
+func CreateSub (c context.Context, subscription, topic string) error {
+	return pubsub.CreateSub(c, subscription, topic, 10*time.Second, "")
+}
 
 func PurgeSub(c context.Context, subscription, topic string) error {
-	if err := pubsub.DeleteSub(c, subscription); err != nil {
+	if err := DeleteSub(c, subscription); err != nil {
 		return err
 	}
 	return pubsub.CreateSub(c, subscription, topic, 10*time.Second, "")
