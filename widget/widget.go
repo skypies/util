@@ -2,8 +2,10 @@
 package widget
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"github.com/skypies/util/date"
 )
@@ -60,6 +62,17 @@ func FormValueFloat64(w http.ResponseWriter, r *http.Request, name string) float
 }
 
 // }}}
+// {{{ FormValueFloat64EatErrs
+
+func FormValueFloat64EatErrs(r *http.Request, name string) float64 {	
+	if val,err := strconv.ParseFloat(r.FormValue(name), 64); err != nil {
+		return -1
+	} else {
+		return val
+	}
+}
+
+// }}}
 // {{{ FormValueCheckbox
 
 func FormValueCheckbox(r *http.Request, name string) bool {
@@ -70,6 +83,33 @@ func FormValueCheckbox(r *http.Request, name string) bool {
 }
 
 // }}}
+// {{{ FormValueCommaSepStrings
+
+func FormValueCommaSepStrings(r *http.Request, name string) []string {
+	ret := []string{}
+	r.ParseForm()
+	for _,v := range r.Form[name] {
+		for _,str := range strings.Split(v, ",") {
+			if str != "" {
+				ret = append(ret, str)
+			}
+		}
+	}
+	return ret
+}
+
+// }}}
+
+// {{{ DateRangeToCGIArgs
+
+func DateRangeToCGIArgs(s,e time.Time) string {
+	str := fmt.Sprintf("date=range&range_from=%s&range_to=%s",
+		s.Format("2006/01/02"), e.Format("2006/01/02"))
+	return str
+}
+
+// }}}
+
 
 // {{{ -------------------------={ E N D }=----------------------------------
 
