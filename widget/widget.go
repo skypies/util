@@ -66,7 +66,7 @@ func FormValueFloat64(w http.ResponseWriter, r *http.Request, name string) float
 
 func FormValueFloat64EatErrs(r *http.Request, name string) float64 {	
 	if val,err := strconv.ParseFloat(r.FormValue(name), 64); err != nil {
-		return -1
+		return 0.0
 	} else {
 		return val
 	}
