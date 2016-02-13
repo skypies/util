@@ -43,6 +43,14 @@ func FormValueInt64(r *http.Request, name string) int64 {
 }
 
 // }}}
+// {{{ FormValueDuration
+
+func FormValueDuration(r *http.Request, name string) time.Duration {
+	val,_ := time.ParseDuration(r.FormValue(name))
+	return val
+}
+
+// }}}
 // {{{ FormValueEpochTime
 
 func FormValueEpochTime(r *http.Request, name string) time.Time {
