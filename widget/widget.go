@@ -23,6 +23,9 @@ func FormValueDateRange(r *http.Request) (s,e time.Time, err error) {
 	case "yesterday":
 		s,_ = date.WindowForYesterday()
 		e=s
+	case "day":
+		s = date.ArbitraryDatestring2MidnightPdt(r.FormValue("day"), "2006/01/02")
+		e=s
 	case "range":
 		s = date.ArbitraryDatestring2MidnightPdt(r.FormValue("range_from"), "2006/01/02")
 		e = date.ArbitraryDatestring2MidnightPdt(r.FormValue("range_to"), "2006/01/02")
