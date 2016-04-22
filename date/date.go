@@ -99,3 +99,18 @@ func Timeslots(s,e time.Time, d time.Duration) []time.Time {
 func RoundDuration(d time.Duration) time.Duration {
 	return time.Duration(int64(d.Seconds())) * time.Second
 }
+
+func DateRangeToPacificTimeWindows(sStr,eStr string) [][]time.Time {
+	start := ArbitraryDatestring2MidnightPdt(sStr, "2006/01/02").Add(-1 * time.Second)
+	end   := ArbitraryDatestring2MidnightPdt(eStr, "2006/01/02").Add(1 * time.Second)
+
+	ret := [][]time.Time{}
+	
+	for _,day := range IntermediateMidnights(start,end) {
+		s,e := WindowForTime(day)
+		e = e.Add(-1 * time.Second)
+		ret = append(ret, []time.Time{s,e})
+	}
+
+	return ret
+}
