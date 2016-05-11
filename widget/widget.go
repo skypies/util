@@ -110,6 +110,22 @@ func FormValueCommaSepStrings(r *http.Request, name string) []string {
 }
 
 // }}}
+// {{{ FormValueCommaSpaceSepStrings
+
+// Separate by comma, or space
+func FormValueCommaSpaceSepStrings(r *http.Request, name string) []string {
+	ret := []string{}
+	for _,v := range FormValueCommaSepStrings(r,name) {
+		for _,str := range strings.Split(v, " ") {
+			if str != "" {
+				ret = append(ret, str)
+			}
+		}
+	}
+	return ret
+}
+
+// }}}
 
 // {{{ DateRangeToCGIArgs
 
