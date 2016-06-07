@@ -5,20 +5,24 @@ import "time"
 
 const dateNoTimeFormat = "2006.01.02"
 
+var localTimeLocation *time.Location
+
+func init() {
+	// time.LoadLocation costs ~1ms, so do it just once and cache in a global
+	localTimeLocation,_ = time.LoadLocation("America/Los_Angeles")
+}
+
 // All these FooPdt functions should be renamed FooPacificTime; they're not specific to
-// dayight savings.
+// dayight savings. And in fact should be turned into LocalTime or something.
 func InPdt(t time.Time) time.Time {
-	pdt, _ := time.LoadLocation("America/Los_Angeles")
-	return t.In(pdt)
+	return t.In(localTimeLocation)
 }
 
 func NowInPdt() time.Time {	return InPdt(time.Now()) }
 
 func ParseInPdt(format string, value string) (time.Time, error) {
-	pdt, err1 := time.LoadLocation("America/Los_Angeles")
-	if err1 != nil { return time.Now(), err1 }
-	t,err2 := time.ParseInLocation(format, value, pdt)
-	if err2 != nil { return NowInPdt(), err2 }
+	t,err := time.ParseInLocation(format, value, localTimeLocation)
+	if err != nil { return NowInPdt(), err }
 	return t, nil
 }
 
@@ -27,8 +31,7 @@ func Time2Datestring(t time.Time) string {
 }
 
 func ArbitraryDatestring2MidnightPdt(s string, fmt string) time.Time {
-	pdt, _ := time.LoadLocation("America/Los_Angeles")
-	t,_ := time.ParseInLocation(fmt, s, pdt)
+	t,_ := time.ParseInLocation(fmt, s, localTimeLocation)
 	return t
 }
 
