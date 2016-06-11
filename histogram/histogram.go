@@ -37,6 +37,7 @@ type Stats struct {
 	N            int
 	Mean         float64
 	Stddev       float64
+	Percentile50 ScalarVal
 	Percentile90 ScalarVal
 }
 
@@ -85,12 +86,14 @@ func (h Histogram) Stats() (*Stats, bool) {
 	}
 
 	stddev := math.Sqrt(diffSquares / float64(n))
+	percentile50, _ := h.Quantile(50)
 	percentile90, _ := h.Quantile(90)
 
 	return &Stats{
 		N:            n,
 		Mean:         mean,
 		Stddev:       stddev,
+		Percentile50: percentile50,
 		Percentile90: percentile90,
 	}, true
 }
@@ -170,8 +173,8 @@ func (h Histogram) bucketsToString(bkts []int) string {
 func (h Histogram) String() string {
 	histStr := h.bucketsToString(h.fillBuckets())
 	stats, _ := h.Stats()
-	return fmt.Sprintf("%s n=% 6d, mean=% 6d, stddev=% 6d, 90%%ile=% 6d",
+	return fmt.Sprintf("%s n=% 6d, mean=% 6d, stddev=% 6d, 50%%ile=% 6d, 90%%ile=% 6d",
 		histStr, stats.N, int(stats.Mean),
-		int(stats.Stddev), stats.Percentile90)
+		int(stats.Stddev), stats.Percentile50, stats.Percentile90)
 }
 
