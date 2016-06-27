@@ -45,11 +45,12 @@ func AtLocalMidnight(in time.Time) time.Time {
 	return time.Date(in.Year(), in.Month(), in.Day(), 0, 0, 0, 0, in.Location())
 }
 
-// A 'window' is a pair of times spanning 24h, respecting the timezone of the input.
+// A 'window' is a pair of times spanning 23-25h, respecting the timezone of the input, and
+// honoring daylight savings changes.
 // start will be midnight (00:00:00) that day; end is 24h later, i.e. 00:00:00 the next day
 func WindowForTime(t time.Time) (start time.Time, end time.Time) {
 	start = AtLocalMidnight(t)
-	end = start.Add(24 * time.Hour)
+	end = start.AddDate(0,0,1)
 	return
 }
 
