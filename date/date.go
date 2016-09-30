@@ -39,11 +39,20 @@ func Datestring2MidnightPdt(s string) time.Time {
 	return ArbitraryDatestring2MidnightPdt(s, dateNoTimeFormat)
 }
 
+// Legacy name, should fixup.
+func AtLocalMidnight(in time.Time) time.Time { return TruncateToLocalDay(in) }
+
 // Round off to 00:00:00 today (i.e. most recent midnight)
 // Can't use time.Round(24*time.Hour); it operates in UTC, so rounds into weird boundaries
-func AtLocalMidnight(in time.Time) time.Time {
+func TruncateToLocalDay(in time.Time) time.Time {
 	return time.Date(in.Year(), in.Month(), in.Day(), 0, 0, 0, 0, in.Location())
 }
+// Perhaps time.Round(24*time.Hour) works here ?
+func TruncateToUTCDay(in time.Time) time.Time {
+	t := in.UTC()
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
 
 // A 'window' is a pair of times spanning 23-25h, respecting the timezone of the input, and
 // honoring daylight savings changes.
