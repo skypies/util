@@ -1,12 +1,27 @@
 package gaeutil
 
 import(
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/datastore"
 )
 
+/*
+
+type Foo struct {
+  S string
+}
+
+foo := Foo{S:"hello"}
+err1 := gaeutil.SaveAnySingleton(ctx, "Foo_007", &foo)
+
+foo2 := Foo{}
+err2 := gaeutil.LoadAnySingleton(ctx, "Foo_007", &foo2)
+
+ */
 
 func singletonDSKey(c context.Context, name string) *datastore.Key {
 	return datastore.NewKey(c, "Singleton", name, 0, nil)
@@ -52,4 +67,33 @@ func SaveSingleton(c context.Context, name string, data []byte) error {
 
 	SaveSingletonToMemcache(c,name,data)  // Don't care if this fails
 	return nil
+}
+
+
+func LoadAnySingleton(ctx context.Context, name string, obj interface{}) error {
+	myBytes,err := LoadSingleton(ctx, name)
+
+	if err == datastore.ErrNoSuchEntity {
+		// Strictly speaking, only LoadSingletonFromDatastore should expose this miss
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	buf := bytes.NewBuffer(myBytes)
+
+	if err := gob.NewDecoder(buf).Decode(obj); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SaveAnySingleton(ctx context.Context, name string, obj interface{}) error {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(obj); err != nil {
+		return err
+	}
+	
+	return SaveSingleton(ctx, name, buf.Bytes())
 }
