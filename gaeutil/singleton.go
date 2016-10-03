@@ -69,6 +69,10 @@ func SaveSingleton(c context.Context, name string, data []byte) error {
 	return nil
 }
 
+func DeleteSingleton(ctx context.Context, name string) error {
+	DeleteSingletonFromMemcache(ctx, name) // Don't care about memcache.ErrCacheMiss
+	return datastore.Delete(ctx, singletonDSKey(ctx,name))
+}
 
 func LoadAnySingleton(ctx context.Context, name string, obj interface{}) error {
 	myBytes,err := LoadSingleton(ctx, name)

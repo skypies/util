@@ -11,6 +11,10 @@ const MaxChunks = 32      // We only shard this much.
 
 func singletonMCKey(name string) string { return "singleton:"+name }
 
+func DeleteSingletonFromMemcache(c context.Context, name string) (error) {
+	return memcache.Delete(c, name)
+}
+
 func LoadSingletonFromMemcache(c context.Context, name string) ([]byte, error) {
 	item,err := memcache.Get(c, singletonMCKey(name))
 	if err != nil {
