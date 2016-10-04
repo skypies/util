@@ -53,6 +53,8 @@ func LoadSingleton(c context.Context, name string) ([]byte, error) {
 	if err != nil {
 		// We don't care if it was a cache miss or a deeper error - failback to datastore either way
 		data,err = LoadSingletonFromDatastore(c,name)
+
+		// Why swallow this error ?
 		if err == datastore.ErrNoSuchEntity {
 			return nil,nil
 		}
@@ -78,10 +80,13 @@ func LoadAnySingleton(ctx context.Context, name string, obj interface{}) error {
 	myBytes,err := LoadSingleton(ctx, name)
 
 	if err == datastore.ErrNoSuchEntity {
-		// Strictly speaking, only LoadSingletonFromDatastore should expose this miss
+		// Debug codepath; LoadSingleton swallows this, but if we use *FromDatastore we see it
 		return nil
 	} else if err != nil {
 		return err
+	} else if myBytes == nil {
+		// This happens if the object was not found; don't try to decode it.
+		return nil
 	}
 
 	buf := bytes.NewBuffer(myBytes)
