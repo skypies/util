@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 	"google.golang.org/cloud/storage"
+	// "cloud.google.com/go/storage" // different API
 )
 
 type RWHandle struct {
