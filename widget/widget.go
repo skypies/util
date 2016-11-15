@@ -4,6 +4,7 @@ package widget
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -136,7 +137,32 @@ func DateRangeToCGIArgs(s,e time.Time) string {
 }
 
 // }}}
+// {{{ ExtractAllCGIArgs, URLStringReplacingGETArgs
 
+// ExtractAllCGIArgs gets both GET and POST arguments into a single map
+func ExtractAllCGIArgs(r *http.Request) url.Values {
+	r.ParseForm()
+	vals := r.URL.Query()
+	for k,formvals := range r.Form {
+		for _,formval := range formvals {
+			vals.Set(k,formval)
+		}
+	}
+	return vals
+}
+
+// Creates a URL that matches the request, adding the vals as CGI GET parameters
+func URLStringReplacingGETArgs(r *http.Request, vals *url.Values) string {
+	urlstr := fmt.Sprintf("%s://%s%s", r.URL.Scheme, r.Host, r.URL.Path)
+
+	if vals != nil {
+		urlstr += fmt.Sprintf("?%s", vals.Encode())
+	}
+
+	return urlstr
+}
+
+// }}}
 
 // {{{ -------------------------={ E N D }=----------------------------------
 
