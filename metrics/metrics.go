@@ -12,18 +12,25 @@ import(
 
 type Metric struct {
 	Name string
-	wh *hdr.WindowedHistogram  // Holds the most recent 60 minutes
+	wh *hdr.WindowedHistogram   // Holds the most recent 60 individual minutes
+	prevMinute *hdr.Snapshot    // Snapshot of the most recent completed minute
 	snaps []*hdr.Snapshot       // Holds the previous 24 hours
 }
 
 func (m *Metric)String() string {
-	str := fmt.Sprintf("%s\n  60s: %s\n  60m: %s\n",
-		m.Name,
-		histutil.HDR2ASCII(m.wh.Current, 40, 0, 1000),
-		histutil.HDR2ASCII(m.wh.Merge(), 40, 0, 1000))
+	asciify := func(h *hdr.Histogram) string {
+		return histutil.HDR2ASCII(h, 40, 0, 2000)
+	}
+
+	prevMinStr := "[gathering ...]"
+	if m.prevMinute != nil {
+		prevMinStr = asciify(hdr.Import(m.prevMinute))
+	}
+	
+	str := fmt.Sprintf("%s\n   1m: %s\n  60m: %s\n", m.Name, prevMinStr, asciify(m.wh.Merge()))
 
 	for i,snap := range m.snaps {
-		str += fmt.Sprintf(" +%02dh: %s\n", i, histutil.HDR2ASCII(hdr.Import(snap), 40, 0, 1000))
+		str += fmt.Sprintf(" +%02dh: %s\n", i+1, asciify(hdr.Import(snap)))
 	}
 	
 	return str
@@ -40,7 +47,8 @@ func (m *Metric)RecordValue(v int64) {
 	m.wh.Current.RecordValue(v) // ignore error
 }
 
-func (m *Metric)Rotate() {
+func (m *Metric)RotateMinute() {
+	m.prevMinute = m.wh.Current.Export()
 	m.wh.Rotate()
 }
 
@@ -81,14 +89,14 @@ func NewMetrics() Metrics {
 // {{{ m.RecordValue
 
 func (m *Metrics)RecordValue(name string, val int64) {
-	// Do we need to roll things ?
+	// Do we need to roll things ? We rotate every minute, and take snapshots every hour.
 	minsSinceLastRotation := int(time.Since(m.lastRotation).Minutes())
 	for i:=0; i<minsSinceLastRotation; i++ {
 		m.lastRotation = time.Now()
 		m.numRotations++
 
 		for name,_ := range m.m {
-			m.m[name].Rotate()
+			m.m[name].RotateMinute()
 		}
 
 		if m.numRotations >= 60 {

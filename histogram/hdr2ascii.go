@@ -8,6 +8,8 @@ import(
 // Simple glue to stringfy a hdrhistogram in ascii, built on the old crappy histogram code
 
 func HDR2ASCII(hist *hdr.Histogram, numChars, floor, ceil int) string {
+	if hist == nil { return "<nil>" }
+
 	template := Histogram{NumBuckets:numChars, ValMin:ScalarVal(floor), ValMax:ScalarVal(ceil)}
 
 	// Bucket zero is underflow; buckets 1..N are the N defined buckets; and
