@@ -2,12 +2,12 @@ package pubsub
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
 	"fmt"
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"golang.org/x/net/context"
 	
 	"github.com/skypies/adsb"
 )
@@ -21,31 +21,6 @@ func NewClient(ctx context.Context, projectName string) *pubsub.Client {
 	}
 
 	return client
-}
-
-
-/*
-func WrapContext(projectName string, in context.Context) context.Context {
-	return in
-
-	client, err := google.DefaultClient(
-    in,
-    pubsub.ScopeCloudPlatform,
-    pubsub.ScopePubSub,
-	)
-	if err != nil {
-		panic(fmt.Sprintf("g.DefaultClient failed: %v", err))
-	}
-
-	return cloud.NewContext(projectName, client)
-}
-*/
-
-// User by receiver; move there ? Or setup contexts ?
-// cp serfr0-fdb-blahblah.json ~/.config/gcloud/application_default_credentials.json
-func GetLocalContext(projectName string) context.Context {
-	return context.TODO()
-//	return WrapContext(projectName, context.TODO())
 }
 
 // }}}

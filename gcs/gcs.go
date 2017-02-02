@@ -1,11 +1,11 @@
 package gcs
 
 import (
-	"context"
 	"fmt"
 	"io"
 
 	"cloud.google.com/go/storage"
+	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 )
 
