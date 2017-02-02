@@ -1,13 +1,12 @@
 package gcs
 
 import (
+	"context"
 	"fmt"
 	"io"
 
-	"golang.org/x/net/context"
+	"cloud.google.com/go/storage"
 	"google.golang.org/appengine/log"
-	"google.golang.org/cloud/storage"
-	// "cloud.google.com/go/storage" // different API
 )
 
 type RWHandle struct {
