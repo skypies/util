@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -49,8 +50,18 @@ func FormValueInt64(r *http.Request, name string) int64 {
 // }}}
 // {{{ FormValueDuration
 
+// As well as the normal syntax, we support "7d", where a day is 24*time.Hour.
 func FormValueDuration(r *http.Request, name string) time.Duration {
-	val,_ := time.ParseDuration(r.FormValue(name))
+	val,err := time.ParseDuration(r.FormValue(name))
+	if err != nil {
+		// Check for 'd', our own pseudo-duration
+		bits := regexp.MustCompile("^([0-9])+d$").FindStringSubmatch(r.FormValue(name))
+		if bits != nil && len(bits)==2 {
+			num,_ := strconv.ParseInt(bits[1], 10, 64)
+			val = time.Hour * 24 * time.Duration(num)
+		}
+	}
+
 	return val
 }
 
