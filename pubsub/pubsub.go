@@ -1,25 +1,33 @@
-// Package pubsub abstracts away publishing and receiving of messages across our two topics
 package pubsub
-
-// https://cloud.google.com/pubsub/docs
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"time"
 
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/pubsub"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
+	"cloud.google.com/go/pubsub"
 	
 	"github.com/skypies/adsb"
 )
 
-// {{{ WrapContext
+// {{{ NewClient
 
+func NewClient(ctx context.Context, projectName string) *pubsub.Client {
+	client, err := pubsub.NewClient(ctx, projectName)
+	if err != nil {
+		panic(fmt.Sprintf("pubsub.NewClient failed: %v", err))
+	}
+
+	return client
+}
+
+
+/*
 func WrapContext(projectName string, in context.Context) context.Context {
+	return in
+
 	client, err := google.DefaultClient(
     in,
     pubsub.ScopeCloudPlatform,
@@ -31,50 +39,55 @@ func WrapContext(projectName string, in context.Context) context.Context {
 
 	return cloud.NewContext(projectName, client)
 }
+*/
 
 // User by receiver; move there ? Or setup contexts ?
 // cp serfr0-fdb-blahblah.json ~/.config/gcloud/application_default_credentials.json
 func GetLocalContext(projectName string) context.Context {
-	return WrapContext(projectName, context.TODO())
+	return context.TODO()
+//	return WrapContext(projectName, context.TODO())
 }
 
 // }}}
+
 // {{{ DeleteSub, CreateSub, PurgeSub
 
-func DeleteSub (c context.Context, subscription string) error {
-	return pubsub.DeleteSub(c, subscription)
+func DeleteSub (ctx context.Context, client *pubsub.Client, subscription string) error {
+	return client.Subscription(subscription).Delete(ctx)
 }
-func CreateSub (c context.Context, subscription, topic string) error {
-	return pubsub.CreateSub(c, subscription, topic, 10*time.Second, "")
+func CreateSub (ctx context.Context, client *pubsub.Client, subscription, topicId string) error {
+	topic := client.Topic(topicId)
+	_,err := client.CreateSubscription(ctx, subscription, topic, 10*time.Second, nil)
+	return err
 }
 
-func PurgeSub(c context.Context, subscription, topic string) error {
-	if err := DeleteSub(c, subscription); err != nil {
+func RecreateSub(ctx context.Context, client *pubsub.Client, subscription, topic string) error {
+	if err := DeleteSub(ctx, client, subscription); err != nil {
 		return err
 	}
-	return pubsub.CreateSub(c, subscription, topic, 10*time.Second, "")
+	return CreateSub(ctx, client, subscription, topic)
 }
 
 // }}}
 // {{{ Setup
 
-func Setup (c context.Context, inTopic, inSub, outTopic string) error {
-	if exists,err := pubsub.TopicExists(c,inTopic); err != nil {
+func Setup (ctx context.Context, client *pubsub.Client, inTopic, inSub, outTopic string) error {
+	if exists,err := client.Topic(inTopic).Exists(ctx); err != nil {
 		return err
 	} else if !exists {
-		if err := pubsub.CreateTopic(c,inTopic); err != nil { return err }
+		if _,err := client.CreateTopic(ctx,inTopic); err != nil { return err }
 	}
 
-	if exists,err := pubsub.TopicExists(c,outTopic); err != nil {
+	if exists,err := client.Topic(outTopic).Exists(ctx); err != nil {
 		return err
 	} else if !exists {
-		if err := pubsub.CreateTopic(c,outTopic); err != nil { return err }
+		if _,err := client.CreateTopic(ctx,outTopic); err != nil { return err }
 	}
 
-	if exists,err := pubsub.SubExists(c,inSub); err != nil {
+	if exists,err := client.Subscription(inSub).Exists(ctx); err != nil {
 		return err
 	} else if !exists {
-		if err := pubsub.CreateSub(c, inSub, inTopic, 10*time.Second, ""); err != nil {
+		if err := CreateSub (ctx, client, inSub, inTopic); err != nil {
 			return err
 		}
 	}
@@ -83,59 +96,57 @@ func Setup (c context.Context, inTopic, inSub, outTopic string) error {
 
 // }}}
 
-// {{{ PublishMsgs
+// {{{ PackPubsubMessage
 
-// This function runs in its own goroutine, so as not to hold up reading new messages
-// https://godoc.org/google.golang.org/cloud/pubsub#Publish
-func PublishMsgs(c context.Context, topic,receiverName string, msgs []*adsb.CompositeMsg) error {
+func PackPubsubMessage(msgs []*adsb.CompositeMsg, receiverName string) (*pubsub.Message, error) {
 	for i,_ := range msgs {
-		//log.Infof(c, "- [%02d]%s\n", i, msg)
 		msgs[i].ReceiverName = receiverName // Claim this message, for upstream fame & glory
 	}
 
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(msgs); err != nil {
-		return err
+		return nil, err
 	}
-	_, err := pubsub.Publish(c, topic, &pubsub.Message{
-		Data: buf.Bytes(),
-	})
 
+	return &pubsub.Message{
+		Data: buf.Bytes(),
+	}, nil
+}
+
+// }}}
+// {{{ UnpackPubsubMessage
+
+func UnpackPubsubMessage(msg *pubsub.Message) ([]*adsb.CompositeMsg, error) {
+	contents := []*adsb.CompositeMsg{}
+
+	buf := bytes.NewBuffer(msg.Data)
+	if err := gob.NewDecoder(buf).Decode(&contents); err != nil {
+		return nil, fmt.Errorf("UnpackPubsubMsg: %v\n", err)
+	}
+	return contents, nil
+
+}
+
+// }}}
+
+// https://godoc.org/cloud.google.com/go/pubsub
+// {{{ PublishMsgs
+
+// This function runs in its own goroutine, so as not to hold up reading new messages
+func PublishMsgs(ctx context.Context, client *pubsub.Client, topic,receiverName string, msgs []*adsb.CompositeMsg) error {
+	m,err := PackPubsubMessage(msgs, receiverName)
+	if err != nil { return err }
+
+	_,err = client.Topic(topic).Publish(ctx, m)
+/*
 	if err != nil {
 		//log.Errorf(c, "pubsub.Publish failed: %v", err)
 	} else {
 		//log.Infof(c, "Published a message with a message id: %s\n", msgIDs[0])
 	}
-		
-	return err
-}
-
-// }}}
-// {{{ Pull
-
-// https://godoc.org/google.golang.org/cloud/pubsub#example-Publish
-func Pull(c context.Context, subscription string, numBundles int) ([]*adsb.CompositeMsg, error) {
-	msgs := []*adsb.CompositeMsg{}
-
-	bundles,err := pubsub.Pull(c,subscription,numBundles)
-	if err != nil {
-		return nil, err
-	}
-
-	for _,bundle := range bundles {
-		bundleContents := []*adsb.CompositeMsg{}
-		buf := bytes.NewBuffer(bundle.Data)
-		if err := gob.NewDecoder(buf).Decode(&bundleContents); err != nil {
-			return nil, err
-		}
-		msgs = append(msgs, bundleContents...)
-
-		if err := pubsub.Ack(c, subscription, bundle.AckID); err != nil {
-			return nil,err
-		}
-	}
+*/
 	
-	return msgs,nil
+	return err
 }
 
 // }}}
