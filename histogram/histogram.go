@@ -173,6 +173,7 @@ func (h Histogram) bucketsToString(bkts []int) string {
 func (h Histogram) String() string {
 	histStr := h.bucketsToString(h.fillBuckets())
 	stats, _ := h.Stats()
+	if stats == nil { stats = &Stats{} }
 	return fmt.Sprintf("%s n=% 6d, mean=% 6d, stddev=% 6d, 50%%ile=% 6d, 90%%ile=% 6d",
 		histStr, stats.N, int(stats.Mean),
 		int(stats.Stddev), stats.Percentile50, stats.Percentile90)

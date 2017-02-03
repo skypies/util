@@ -46,17 +46,11 @@ func RecreateSub(ctx context.Context, client *pubsub.Client, subscription, topic
 // }}}
 // {{{ Setup
 
-func Setup (ctx context.Context, client *pubsub.Client, inTopic, inSub, outTopic string) error {
+func Setup (ctx context.Context, client *pubsub.Client, inTopic, inSub string) error {
 	if exists,err := client.Topic(inTopic).Exists(ctx); err != nil {
 		return err
 	} else if !exists {
 		if _,err := client.CreateTopic(ctx,inTopic); err != nil { return err }
-	}
-
-	if exists,err := client.Topic(outTopic).Exists(ctx); err != nil {
-		return err
-	} else if !exists {
-		if _,err := client.CreateTopic(ctx,outTopic); err != nil { return err }
 	}
 
 	if exists,err := client.Subscription(inSub).Exists(ctx); err != nil {

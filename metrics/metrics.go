@@ -54,10 +54,11 @@ func (m *Metric)RotateMinute() {
 
 func (m *Metric)StoreSnapshot() {
 	snap := m.wh.Merge().Export()
-	m.snaps = append(m.snaps, snap)
-	if len(m.snaps) > 24 {
-		m.snaps = m.snaps[:24]
-	}
+	m.snaps = append([]*hdr.Snapshot{snap}, m.snaps[:23]...)
+//	m.snaps = append(m.snaps, snap)
+//	if len(m.snaps) > 24 {
+//		m.snaps = m.snaps[:24]
+//	}
 }
 
 // }}}
