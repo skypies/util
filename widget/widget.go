@@ -40,11 +40,18 @@ func FormValueDateRange(r *http.Request) (s,e time.Time, err error) {
 }
 
 // }}}
-// {{{ FormValueInt64
+// {{{ FormValue{Int64,IntWithDefault}
 
 func FormValueInt64(r *http.Request, name string) int64 {
 	val,_ := strconv.ParseInt(r.FormValue(name), 10, 64)
 	return val
+}
+
+func FormValueIntWithDefault(r *http.Request, name string, dflt int) int {
+	if val := FormValueInt64(r, name); val > 0 {
+		return int(val)
+	}
+	return dflt
 }
 
 // }}}
