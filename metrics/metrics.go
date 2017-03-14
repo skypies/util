@@ -62,8 +62,6 @@ func (m *Metric)StoreSnapshot() {
 }
 
 // }}}
-
-
 // {{{ Metrics{}
 
 type Metrics struct {
