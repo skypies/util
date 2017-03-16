@@ -48,7 +48,7 @@ func FormValueInt64(r *http.Request, name string) int64 {
 }
 
 func FormValueIntWithDefault(r *http.Request, name string, dflt int) int {
-	if val := FormValueInt64(r, name); val > 0 {
+	if val := FormValueInt64(r, name); val != 0 {
 		return int(val)
 	}
 	return dflt
@@ -80,7 +80,7 @@ func FormValueEpochTime(r *http.Request, name string) time.Time {
 }
 
 // }}}
-// {{{ FormValueFloat64
+// {{{ FormValueFloat64{,WithDefault}
 
 func FormValueFloat64(w http.ResponseWriter, r *http.Request, name string) float64 {	
 	if val,err := strconv.ParseFloat(r.FormValue(name), 64); err != nil {
@@ -89,6 +89,13 @@ func FormValueFloat64(w http.ResponseWriter, r *http.Request, name string) float
 	} else {
 		return val
 	}
+}
+
+func FormValueFloat64WithDefault(r *http.Request, name string, dflt float64) float64 {
+	if val,err := strconv.ParseFloat(r.FormValue(name), 64); err == nil {
+		return val
+	}
+	return dflt
 }
 
 // }}}
@@ -146,12 +153,21 @@ func FormValueCommaSpaceSepStrings(r *http.Request, name string) []string {
 
 // }}}
 
+// {{{ DateRangeToValues
+
+func DateRangeToValues(s,e time.Time) url.Values {
+	v := url.Values{}
+	v.Add("date", "range")
+	v.Add("range_from", s.Format("2006/01/02"))
+	v.Add("range_to", e.Format("2006/01/02"))
+	return v
+}
+
+// }}}
 // {{{ DateRangeToCGIArgs
 
 func DateRangeToCGIArgs(s,e time.Time) string {
-	str := fmt.Sprintf("date=range&range_from=%s&range_to=%s",
-		s.Format("2006/01/02"), e.Format("2006/01/02"))
-	return str
+	return DateRangeToValues(s,e).Encode()
 }
 
 // }}}

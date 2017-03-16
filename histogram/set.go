@@ -8,8 +8,8 @@ import(
 
 /*
 
- s := histogram.NewSet()
- s.RecordValue("event_name", int64(millis))
+ s := histogram.NewSet(int(maxVal))
+ s.RecordValue("event_name", int64(micros))
  fmt.Printf("Stats:-\n%s", s)
 
  */
@@ -17,6 +17,7 @@ import(
 // {{{ Set{}
 
 type Set struct {
+	maxval int
 	m map[string]*hdr.Histogram
 }
 
@@ -24,8 +25,9 @@ type Set struct {
 
 // {{{ NewSet
 
-func NewSet() Set {
+func NewSet(maxval int) Set {
 	return Set{
+		maxval: maxval,
 		m: map[string]*hdr.Histogram{},
 	}
 }
@@ -51,8 +53,8 @@ func (s Set)String() string {
 
 	str := ""
 	for _,name := range names {
-		// Width is 2000; if using millis, that'll be two seconds, anything longer goes in overflow
-		str += fmt.Sprintf("%-20.20s: %s\n", name, HDR2ASCII(s.m[name], 40, 0, 2000))
+		// Anything larger than maxval goes into overflow bucket.
+		str += fmt.Sprintf("%-20.20s: %s\n", name, HDR2ASCII(s.m[name], 40, 0, s.maxval))
 	}
 	return str
 }

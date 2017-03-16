@@ -3,6 +3,7 @@ package date
 import(
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -16,6 +17,9 @@ func FormValueTimeOfDayRange(r *http.Request, stem string) (TimeOfDayRange,error
 	return ParseTimeOfDay(r.FormValue(stem+"_start"), r.FormValue(stem+"_len"),)
 }
 
-func (tr TimeOfDayRange)ToCGIArgs(stem string) string {
-	return fmt.Sprintf("%s_start=%02d:%02d&%s_len=%s", stem, tr.Hour, tr.Minute, stem, tr.Length)
+func (tr TimeOfDayRange)Values() url.Values {
+	v := url.Values{}
+	v.Add("start", fmt.Sprintf("%02d:%02d", tr.Hour, tr.Minute))
+	v.Add("len", tr.Length.String())
+	return v
 }
