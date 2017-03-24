@@ -3,6 +3,7 @@ package gaeutil
 import(
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	
 	"golang.org/x/net/context"
@@ -31,10 +32,15 @@ type Singleton struct {
 	Value []byte `datastore:",noindex"`
 }
 
+var ErrNoSuchEntityDS = errors.New("gaeutil/datastore: no such entity")
+
 func LoadSingletonFromDatastore(c context.Context, name string) ([]byte, error) {
 	s := Singleton{}
 	if err := datastore.Get(c, singletonDSKey(c,name), &s); err != nil {
-		return nil,err  // might be datastore.ErrNoSuchEntity
+		if err == datastore.ErrNoSuchEntity {
+			return nil,ErrNoSuchEntityDS // Wrap this, so clients don't need to import datastore
+		}
+		return nil,err
 	}
 	return s.Value,nil
 }
@@ -79,7 +85,7 @@ func DeleteSingleton(ctx context.Context, name string) error {
 func LoadAnySingleton(ctx context.Context, name string, obj interface{}) error {
 	myBytes,err := LoadSingleton(ctx, name)
 
-	if err == datastore.ErrNoSuchEntity {
+	if err == ErrNoSuchEntityDS {
 		// Debug codepath; LoadSingleton swallows this, but if we use *FromDatastore we see it
 		return nil
 	} else if err != nil {
