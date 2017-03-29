@@ -1,0 +1,160 @@
+package dsprovider
+
+import(
+	"fmt"
+	"testing"
+
+	"golang.org/x/net/context"
+
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/aetest" // Also used for testing Cloud API, in theory
+)
+
+const AppID = "mytestapp"
+const TestKind = "test"
+type Testobj struct {
+	I,J int
+	S   string
+}
+
+// {{{ newConsistentContext
+
+// A version of aetest.NewContext() that has a consistent datastore - so we can read our writes.
+func newConsistentContext() (context.Context, func(), error) {
+	inst, err := aetest.NewInstance(&aetest.Options{
+		StronglyConsistentDatastore: true,
+		AppID: AppID,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	req, err := inst.NewRequest("GET", "/", nil)
+	if err != nil {
+		inst.Close()
+		return nil, nil, err
+	}
+	ctx := appengine.NewContext(req)
+	return ctx, func() {
+		inst.Close()
+	}, nil
+}
+
+// }}}
+// {{{ putObjs
+
+func putObjs(ctx context.Context, p DatastoreProvider, t *testing.T, n int) ([]Testobj, []Keyer) {
+	objs := []Testobj{}
+	keyers := []Keyer{}
+	for i:=0; i<n; i++ {
+		obj := Testobj{I: i*3}
+		keyer := p.NewIncompleteKey(ctx, TestKind, nil)
+		fullKeyer,err := p.Put(ctx, keyer, &obj)
+		if err != nil {
+			t.Errorf("Put on %#v failed with err: %v\n", obj, err)
+		}
+		objs = append(objs, obj)
+		keyers = append(keyers, fullKeyer)
+	}
+
+	return objs,keyers
+}
+
+// }}}
+
+func TestProviderAPI(t *testing.T) {
+	testProviderAPI(t, AppengineDSProvider{})
+	// Sadly, the aetest framework hangs on the first Put from the cloud client
+	//testProviderAPI(t, CloudDSProvider{AppID})
+}
+// {{{ testProviderAPI
+
+func testProviderAPI(t *testing.T, p DatastoreProvider) {
+	ctx, done, err := newConsistentContext()
+	if err != nil { t.Fatal(err) }
+	defer done()
+
+	// query runner
+	runQ := func(expected int, q *Query) {
+		results := []Testobj{}
+		if _,err := p.GetAll(ctx, q, &results); err != nil {
+			t.Fatal(err)
+		} else if len(results) != expected {
+			t.Errorf("expected %d results, saw %d; query: %s", expected, len(results), q)
+			for i,f := range results { fmt.Printf("result [%3d] %s\n", i, f) }
+		}
+	}
+
+	// Insert a few things
+	objs,keyers := putObjs(ctx, p, t, 3)
+
+	// Lookup a few things
+	runQ(len(objs), NewQuery(TestKind))
+	runQ(2,         NewQuery(TestKind).Limit(2))
+	runQ(1,         NewQuery(TestKind).Filter("I = ", 6))
+
+	// Now delete something, and see it vanish
+	if err := p.Delete(ctx, keyers[0]); err != nil {
+		t.Errorf("p.Delete failed: %v\n", err)
+	}
+	
+	runQ(len(objs)-1, NewQuery(TestKind))
+
+	keyers = keyers[1:]
+	
+	results := make([]Testobj, len(keyers)) // dst must be same length as keyers for GetMulti
+	if err := p.GetMulti(ctx,keyers,results); err != nil {
+		t.Errorf("p.GetMulti failed: %v\n", err)
+	}
+	if len(results) != 2 {
+		t.Errorf("p.GetMulti: expected %d, saw %d\n", 2, len(results))
+	}
+}
+
+// }}}
+
+func TestIterator(t *testing.T) {
+	testIterator(t, AppengineDSProvider{})
+}
+// {{{ testIterator
+
+func testIterator(t *testing.T, p DatastoreProvider) {
+	ctx, done, err := newConsistentContext()
+	if err != nil { t.Fatal(err) }
+	defer done()
+
+	// Insert a few things
+	nObj := 11
+	_,_ = putObjs(ctx, p, t, nObj)
+
+	it := NewIterator(ctx, p, NewQuery(TestKind).Order("I"), Testobj{})  // Needs an example item
+
+	it.PageSize = 3 // use a page size that isn't a factor of the size of the result set
+	
+	n := 0
+
+	obj1,obj2 := Testobj{},Testobj{}
+	for it.Iterate(ctx) {
+		it.Val(&obj1)
+		obj2 = it.ValAsInterface().(Testobj)
+		fmt.Printf("%#v, %#v\n", obj1, obj2)
+		n++
+	}
+	if it.Err() != nil {
+		t.Errorf("test iterator err: %v\n", it.Err())
+	}
+
+	if n != nObj {
+		t.Errorf("test expected to see %d, but saw %d\n", nObj, n)
+	}
+}
+
+// }}}
+
+
+// {{{ -------------------------={ E N D }=----------------------------------
+
+// Local variables:
+// folded-file: t
+// end:
+
+// }}}
