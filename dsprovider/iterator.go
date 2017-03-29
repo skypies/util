@@ -15,9 +15,9 @@ import(
 
  for it.Iterate(ctx) {
    obj := MyObject{}
-   it.Val(&obj)
+   keyer := it.Val(&obj)
    // obj = it.ValAsInterface().(MyObject) // Can use type assertion if you want direct assigment
-   fmt.Printf("%s\n", obj)
+   fmt.Printf("k=%v, v=%s\n", keyer, obj)
  }
  if it.Err() != nil {
    return it.Err()
@@ -35,9 +35,13 @@ type Iterator struct {
 	PageSize     int
 
 	keyers     []Keyer        // Keys for the (unfetched remainder of the) full result set
-  Slice        interface{}  // Populated when batching. Exported so that reflect can set it
-	val          interface{}  //
-	err          error
+
+  Slice        interface{}  // The current page of results
+	sliceKeys  []Keyer        // ... with their keys
+
+	val          interface{}  // The currently fetched value
+	keyer        Keyer        // ... and its key ...
+	err          error        // ... or the error we bumped into
 }
 
 // {{{ NewIterator
@@ -72,11 +76,15 @@ func (iter *Iterator)Err() error {
 	return fmt.Errorf("dsprovider.iterator: {%v}", iter.err)
 }
 
+// Convenience function for things that wrap iterator
+func (iter *Iterator)SetErr(err error) { iter.err = err }
+
 // }}}
 // {{{ Val
 
-func (iter *Iterator)Val(dst interface{}) {
+func (iter *Iterator)Val(dst interface{}) Keyer {
 	reflect.ValueOf(dst).Elem().Set(reflect.ValueOf(iter.val)) // *dst = iter.val
+	return iter.keyer
 }
 
 // }}}
@@ -139,6 +147,7 @@ func (iter *Iterator)nextInPage(ctx context.Context) (bool) {
 		keysForThisBatch  = iter.keyers[0:nextSliceSize]
 		iter.keyers       = iter.keyers[nextSliceSize:]
 
+		iter.sliceKeys = keysForThisBatch
 		iter.newSlice(nextSliceSize)
 		
 		// Fetch the objects for the keys in this batch, into the user-provided slice.
@@ -152,7 +161,9 @@ func (iter *Iterator)nextInPage(ctx context.Context) (bool) {
 
 	// We should have unreturned results in the cache, one way or another; shift & return the first
 	iter.val = iter.sliceShift()
-
+	iter.keyer = iter.sliceKeys[0]
+	iter.sliceKeys = iter.sliceKeys[1:]
+	
 	return true
 }
 

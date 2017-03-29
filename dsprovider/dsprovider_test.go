@@ -134,9 +134,9 @@ func testIterator(t *testing.T, p DatastoreProvider) {
 
 	obj1,obj2 := Testobj{},Testobj{}
 	for it.Iterate(ctx) {
-		it.Val(&obj1)
+		keyer := it.Val(&obj1)
 		obj2 = it.ValAsInterface().(Testobj)
-		fmt.Printf("%#v, %#v\n", obj1, obj2)
+		fmt.Printf("%v: %#v, %#v\n", keyer, obj1, obj2)
 		n++
 	}
 	if it.Err() != nil {
