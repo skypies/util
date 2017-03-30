@@ -74,7 +74,7 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 	defer done()
 
 	// query runner
-	runQ := func(expected int, q *Query) {
+	runQ := func(expected int, q *Query) []Testobj {
 		results := []Testobj{}
 		if _,err := p.GetAll(ctx, q, &results); err != nil {
 			t.Fatal(err)
@@ -82,6 +82,7 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 			t.Errorf("expected %d results, saw %d; query: %s", expected, len(results), q)
 			for i,f := range results { fmt.Printf("result [%3d] %s\n", i, f) }
 		}
+		return results
 	}
 
 	// Insert a few things
@@ -91,7 +92,11 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 	runQ(len(objs), NewQuery(TestKind))
 	runQ(2,         NewQuery(TestKind).Limit(2))
 	runQ(1,         NewQuery(TestKind).Filter("I = ", 6))
-
+	proj := runQ(1, NewQuery(TestKind).Filter("I = ", 6).Project("J"))
+	if proj[0].I != 0 {
+		t.Errorf("We saw an I value when we only projected J\n")
+	}
+	
 	// Now delete something, and see it vanish
 	if err := p.Delete(ctx, keyers[0]); err != nil {
 		t.Errorf("p.Delete failed: %v\n", err)

@@ -20,9 +20,10 @@ func (p CloudDSProvider)flattenQuery(in *Query) *datastore.Query {
 	for _,filter := range in.Filters {
 		out = out.Filter(filter.Field, filter.Value)
 	}
-	if in.OrderStr != "" { out = out.Order(in.OrderStr) }
-	if in.KeysOnlyVal    { out = out.KeysOnly() }
-	if in.LimitVal != 0  { out = out.Limit(in.LimitVal) }
+	if len(in.ProjectFields) != 0 { out = out.Project(in.ProjectFields...) }
+	if in.OrderStr != ""          { out = out.Order(in.OrderStr) }
+	if in.KeysOnlyVal             { out = out.KeysOnly() }
+	if in.LimitVal != 0           { out = out.Limit(in.LimitVal) }
 	return out
 }
 
