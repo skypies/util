@@ -47,7 +47,7 @@ func putObjs(ctx context.Context, p DatastoreProvider, t *testing.T, n int) ([]T
 	keyers := []Keyer{}
 	for i:=0; i<n; i++ {
 		obj := Testobj{I: i*3}
-		keyer := p.NewIncompleteKey(ctx, TestKind, nil)
+		keyer := p.NewNameKey(ctx, TestKind, fmt.Sprintf("name%d", i), nil)
 		fullKeyer,err := p.Put(ctx, keyer, &obj)
 		if err != nil {
 			t.Errorf("Put on %#v failed with err: %v\n", obj, err)
@@ -87,6 +87,13 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 
 	// Insert a few things
 	objs,keyers := putObjs(ctx, p, t, 3)
+
+	if parent := p.KeyParent(keyers[0]); parent != nil {
+		t.Errorf("KeyParent lookup wasn't nil: %#v", parent)
+	}
+	if name := p.KeyName(keyers[0]); name != "name0" {
+		t.Errorf("KeyName looked up %q, not \"name0\"\n", name)
+	}
 
 	// Lookup a few things
 	runQ(len(objs), NewQuery(TestKind))

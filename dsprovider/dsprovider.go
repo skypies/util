@@ -21,7 +21,10 @@ type DatastoreProvider interface {
 	NewIncompleteKey(ctx context.Context, kind string, root Keyer) Keyer
 	NewNameKey(ctx context.Context, kind, name string, root Keyer) Keyer
 	NewIDKey(ctx context.Context, kind string, id int64, root Keyer) Keyer
+
 	DecodeKey(encoded string) (Keyer, error)
+	KeyParent(Keyer) Keyer
+	KeyName(Keyer) string
 
 	// Infof, etc ?
 }

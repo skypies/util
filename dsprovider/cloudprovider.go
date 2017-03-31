@@ -86,14 +86,7 @@ func (p CloudDSProvider)DeleteMulti(ctx context.Context, keyers []Keyer) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }
 	return dsClient.DeleteMulti(ctx, p.unpackKeyers(keyers))
-}	
-
-
-func (p CloudDSProvider)DecodeKey(encoded string) (Keyer, error) {
-	key, err := datastore.DecodeKey(encoded)
-	return Keyer(key), err
 }
-
 
 func (p CloudDSProvider)NewIncompleteKey(ctx context.Context, kind string, root Keyer) Keyer {
 	key := datastore.IncompleteKey(kind, p.unpackKeyer(root))
@@ -107,3 +100,15 @@ func (p CloudDSProvider)NewIDKey(ctx context.Context, kind string, id int64, roo
 	key := datastore.IDKey(kind, id, p.unpackKeyer(root))
 	return Keyer(key)
 }
+
+func (p CloudDSProvider)DecodeKey(encoded string) (Keyer, error) {
+	key, err := datastore.DecodeKey(encoded)
+	return Keyer(key), err
+}
+func (p CloudDSProvider)KeyParent(in Keyer) Keyer {
+	if parentKey := p.unpackKeyer(in).Parent; parentKey != nil {
+		return Keyer(parentKey)
+	}
+	return nil
+}
+func (p CloudDSProvider)KeyName(in Keyer) string { return p.unpackKeyer(in).Name }

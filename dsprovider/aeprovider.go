@@ -70,10 +70,6 @@ func (p AppengineDSProvider)DeleteMulti(ctx context.Context, keyers []Keyer) err
 	return datastore.DeleteMulti(ctx, p.unpackKeyers(keyers))
 }	
 
-func (p AppengineDSProvider)DecodeKey(encoded string) (Keyer, error) {
-	key, err := datastore.DecodeKey(encoded)
-	return Keyer(key), err
-}
 func (p AppengineDSProvider)NewIncompleteKey(ctx context.Context, kind string, root Keyer) Keyer {
 	key := datastore.NewIncompleteKey(ctx, kind, p.unpackKeyer(root))
 	return Keyer(key)
@@ -86,3 +82,15 @@ func (p AppengineDSProvider)NewIDKey(ctx context.Context, kind string, id int64,
 	key := datastore.NewKey(ctx, kind, "", id, p.unpackKeyer(root))
 	return Keyer(key)
 }
+
+func (p AppengineDSProvider)DecodeKey(encoded string) (Keyer, error) {
+	key, err := datastore.DecodeKey(encoded)
+	return Keyer(key), err
+}
+func (p AppengineDSProvider)KeyParent(in Keyer) Keyer {
+	if parentKey := p.unpackKeyer(in).Parent(); parentKey != nil {
+		return Keyer(parentKey)
+	}
+	return nil
+}
+func (p AppengineDSProvider)KeyName(in Keyer) string { return p.unpackKeyer(in).StringID() }
