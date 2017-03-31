@@ -41,13 +41,15 @@ func (p CloudDSProvider)unpackKeyers(in []Keyer) []*datastore.Key {
 
 func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error) {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
-	if err != nil { return nil, fmt.Errorf("GetAll{cloud}: %v\nQuery: %s", err, q) }
-
 	dsQuery := p.flattenQuery(q)
 
 	keys,err := dsClient.GetAll(ctx, dsQuery, dst)
+
 	if err != nil {
-		return nil, fmt.Errorf("GetAll{cloud}: %v", err)
+		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
+			return nil, ErrFieldMismatch
+		}
+		return nil, fmt.Errorf("GetAll{cloud}: %v\nQuery: %s", err, q)
 	}
 
 	keyers := []Keyer{}
@@ -61,13 +63,31 @@ func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) (
 func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }
-	return dsClient.Get(ctx, p.unpackKeyer(keyer), dst)
+
+	err = dsClient.Get(ctx, p.unpackKeyer(keyer), dst)
+	if err == datastore.ErrNoSuchEntity {
+		return ErrNoSuchEntity
+	} else if err != nil {
+		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
+			return ErrFieldMismatch
+		}
+	}
+	return err
 }
 
 func (p CloudDSProvider)GetMulti(ctx context.Context, keyers []Keyer, dst interface{}) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }
-	return dsClient.GetMulti(ctx, p.unpackKeyers(keyers), dst)
+	err = dsClient.GetMulti(ctx, p.unpackKeyers(keyers), dst)
+
+	if err == datastore.ErrNoSuchEntity {
+		return ErrNoSuchEntity
+	} else if err != nil {
+		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
+			return ErrFieldMismatch
+		}
+	}
+	return err
 }
 
 func (p CloudDSProvider)Put(ctx context.Context, keyer Keyer, src interface{}) (Keyer, error) {
@@ -80,12 +100,16 @@ func (p CloudDSProvider)Put(ctx context.Context, keyer Keyer, src interface{}) (
 func (p CloudDSProvider)Delete(ctx context.Context, keyer Keyer) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }
-	return dsClient.Delete(ctx, p.unpackKeyer(keyer))
+	err = dsClient.Delete(ctx, p.unpackKeyer(keyer))
+	if err ==	datastore.ErrNoSuchEntity { return ErrNoSuchEntity }
+	return err
 }	
 func (p CloudDSProvider)DeleteMulti(ctx context.Context, keyers []Keyer) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }
-	return dsClient.DeleteMulti(ctx, p.unpackKeyers(keyers))
+	err = dsClient.DeleteMulti(ctx, p.unpackKeyers(keyers))
+	if err ==	datastore.ErrNoSuchEntity { return ErrNoSuchEntity }
+	return err
 }
 
 func (p CloudDSProvider)NewIncompleteKey(ctx context.Context, kind string, root Keyer) Keyer {

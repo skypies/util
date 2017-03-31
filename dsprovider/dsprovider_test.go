@@ -111,6 +111,11 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 	
 	runQ(len(objs)-1, NewQuery(TestKind))
 
+	result := Testobj{}
+	if err := p.Get(ctx, keyers[0], &result); err != ErrNoSuchEntity {
+		t.Errorf("Failed to recast ErrNoSuchEntity")
+	}
+	
 	keyers = keyers[1:]
 	
 	results := make([]Testobj, len(keyers)) // dst must be same length as keyers for GetMulti

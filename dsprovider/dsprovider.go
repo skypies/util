@@ -1,6 +1,14 @@
 package dsprovider
 
-import "golang.org/x/net/context"
+import(
+	"errors"
+	"golang.org/x/net/context"
+)
+
+var(
+	ErrNoSuchEntity = errors.New("dsprovider: no such entity")
+	ErrFieldMismatch = errors.New("dsprovider: src obj had a field that dst obj didn't")
+)
 
 // Keyer is a very thin wrapper. It should be populated with a *datastore.Key
 type Keyer interface {
