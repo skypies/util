@@ -69,6 +69,14 @@ func (iter *Iterator)Iterate(ctx context.Context) bool {
 }
 
 // }}}
+// {{{ Remaining
+
+// Remaining returns how many items are yet to be processed by the caller
+func (iter *Iterator)Remaining() int {
+	return iter.currSliceSize() + len(iter.keyers)
+}
+
+// }}}
 // {{{ Err
 
 func (iter *Iterator)Err() error {
@@ -100,7 +108,12 @@ func (iter *Iterator)ValAsInterface() interface{}{
 
 // {{{ slice reflection stuff
 
-func (iter *Iterator)currSliceSize() int { return reflect.ValueOf(iter.Slice).Len() }
+func (iter *Iterator)currSliceSize() int {
+	if iter.Slice == nil {
+		return 0
+	}
+	return reflect.ValueOf(iter.Slice).Len()
+}
 
 func (iter *Iterator)newSlice(size int) {
 	newSlcVal := reflect.MakeSlice(reflect.SliceOf(iter.ty), size, size)

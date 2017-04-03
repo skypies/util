@@ -43,17 +43,18 @@ func (p AppengineDSProvider)GetAll(ctx context.Context, q *Query, dst interface{
 	aeQuery := p.FlattenQuery(q)	
 	keys,err := aeQuery.GetAll(ctx, dst)
 
-	if err != nil {
-		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
-			return nil, ErrFieldMismatch
-		}
-		return nil, fmt.Errorf("GetAll{AE}: %v\nQuery: %s", err, q)
-	}
-
 	keyers := []Keyer{}
 	for _,k := range keys {
 		keyers = append(keyers, Keyer(k))
 	}
+
+	if err != nil {
+		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
+			return keyers, ErrFieldMismatch
+		}
+		return nil, fmt.Errorf("GetAll{AE}: %v\nQuery: %s", err, q)
+	}
+
 	return keyers,nil
 }
 

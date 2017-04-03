@@ -45,16 +45,16 @@ func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) (
 
 	keys,err := dsClient.GetAll(ctx, dsQuery, dst)
 
-	if err != nil {
-		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
-			return nil, ErrFieldMismatch
-		}
-		return nil, fmt.Errorf("GetAll{cloud}: %v\nQuery: %s", err, q)
-	}
-
 	keyers := []Keyer{}
 	for _,k := range keys {
 		keyers = append(keyers, Keyer(k))
+	}
+
+	if err != nil {
+		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
+			return keyers, ErrFieldMismatch
+		}
+		return nil, fmt.Errorf("GetAll{cloud}: %v\nQuery: %s", err, q)
 	}
 	return keyers,nil
 }
