@@ -38,17 +38,20 @@ func (p CloudDSProvider)unpackKeyers(in []Keyer) []*datastore.Key {
 	}
 	return out
 }
+func (p CloudDSProvider)packKeyers(in []*datastore.Key) []Keyer {
+	out := []Keyer{}
+	for _,k := range in {
+		out = append(out, Keyer(k))
+	}
+	return out
+}
 
 func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error) {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	dsQuery := p.flattenQuery(q)
 
 	keys,err := dsClient.GetAll(ctx, dsQuery, dst)
-
-	keyers := []Keyer{}
-	for _,k := range keys {
-		keyers = append(keyers, Keyer(k))
-	}
+	keyers := p.packKeyers(keys)
 
 	if err != nil {
 		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
@@ -58,7 +61,6 @@ func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) (
 	}
 	return keyers,nil
 }
-
 
 func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
@@ -97,6 +99,13 @@ func (p CloudDSProvider)Put(ctx context.Context, keyer Keyer, src interface{}) (
 	key,error := dsClient.Put(ctx, p.unpackKeyer(keyer), src)
 	return Keyer(key), error
 }	
+func (p CloudDSProvider)PutMulti(ctx context.Context, keyers []Keyer, src interface{}) ([]Keyer, error) {
+	dsClient, err := datastore.NewClient(ctx, p.Project)
+	if err != nil { return nil,err }
+
+	keys,err := dsClient.PutMulti(ctx, p.unpackKeyers(keyers), src)
+	return p.packKeyers(keys), err
+}
 func (p CloudDSProvider)Delete(ctx context.Context, keyer Keyer) error {
 	dsClient, err := datastore.NewClient(ctx, p.Project)
 	if err != nil { return err }

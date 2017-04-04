@@ -23,6 +23,7 @@ type DatastoreProvider interface {
 	GetMulti(ctx context.Context, keyers []Keyer, dst interface{}) error
 	GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error)
 	Put(ctx context.Context, keyer Keyer, src interface{}) (Keyer, error)
+	PutMulti(ctx context.Context, keyers []Keyer, src interface{}) ([]Keyer, error)
 	Delete(ctx context.Context, keyer Keyer) error
 	DeleteMulti(ctx context.Context, keyers []Keyer) error
 	

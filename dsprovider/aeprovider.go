@@ -37,16 +37,19 @@ func (p AppengineDSProvider)unpackKeyers(in []Keyer) []*datastore.Key {
 	}
 	return out
 }
+func (p AppengineDSProvider)packKeyers(in []*datastore.Key) []Keyer {
+	out := []Keyer{}
+	for _,k := range in {
+		out = append(out, Keyer(k))
+	}
+	return out
+}
 
 
 func (p AppengineDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error) {
 	aeQuery := p.FlattenQuery(q)	
 	keys,err := aeQuery.GetAll(ctx, dst)
-
-	keyers := []Keyer{}
-	for _,k := range keys {
-		keyers = append(keyers, Keyer(k))
-	}
+	keyers := p.packKeyers(keys)
 
 	if err != nil {
 		if _,assertionOk := err.(*datastore.ErrFieldMismatch); assertionOk {
@@ -88,6 +91,10 @@ func (p AppengineDSProvider)Put(ctx context.Context, keyer Keyer, src interface{
 	key,error := datastore.Put(ctx, p.unpackKeyer(keyer), src)
 	return Keyer(key), error
 }	
+func (p AppengineDSProvider)PutMulti(ctx context.Context, keyers []Keyer, src interface{}) ([]Keyer, error) {
+	keys,err := datastore.PutMulti(ctx, p.unpackKeyers(keyers), src)
+	return p.packKeyers(keys), err
+}
 func (p AppengineDSProvider)Delete(ctx context.Context, keyer Keyer) error {
 	err := datastore.Delete(ctx, p.unpackKeyer(keyer))
 	if err ==	datastore.ErrNoSuchEntity { return ErrNoSuchEntity }

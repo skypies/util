@@ -125,6 +125,20 @@ func testProviderAPI(t *testing.T, p DatastoreProvider) {
 	if len(results) != 2 {
 		t.Errorf("p.GetMulti: expected %d, saw %d\n", 2, len(results))
 	}
+
+	// PutMulti
+	multiObjs := []Testobj{}
+	multiKeyers := []Keyer{}
+	for i:=0; i<452; i++ {
+		obj := Testobj{I: (100+i)*3}
+		keyer := p.NewNameKey(ctx, TestKind, fmt.Sprintf("name%d", i+100), nil)
+		multiKeyers = append(multiKeyers, keyer)
+		multiObjs = append(multiObjs, obj)
+	}
+
+	if _,err := p.PutMulti(ctx, multiKeyers, multiObjs); err != nil {
+		t.Errorf("PutMulti on %d objs failed with err: %v\n", len(multiObjs), err)
+	}
 }
 
 // }}}
