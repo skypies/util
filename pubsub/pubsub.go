@@ -32,7 +32,8 @@ func DeleteSub (ctx context.Context, client *pubsub.Client, subscription string)
 }
 func CreateSub (ctx context.Context, client *pubsub.Client, subscription, topicId string) error {
 	topic := client.Topic(topicId)
-	_,err := client.CreateSubscription(ctx, subscription, topic, 10*time.Second, nil)
+	cfg := pubsub.SubscriptionConfig{Topic:topic, AckDeadline: 10*time.Second}
+	_,err := client.CreateSubscription(ctx, subscription, cfg)//topic, 10*time.Second, nil)
 	return err
 }
 
