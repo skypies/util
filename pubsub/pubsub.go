@@ -107,7 +107,8 @@ func PublishMsgs(ctx context.Context, client *pubsub.Client, topic,receiverName 
 	m,err := PackPubsubMessage(msgs, receiverName)
 	if err != nil { return err }
 
-	_,err = client.Topic(topic).Publish(ctx, m)
+	_,err := client.Topic(topic).Publish(ctx, m).Get()
+	
 /*
 	if err != nil {
 		//log.Errorf(c, "pubsub.Publish failed: %v", err)
