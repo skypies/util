@@ -4,15 +4,32 @@ package dsprovider
 
 import(
 	"fmt"
+	"time"
 	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"cloud.google.com/go/datastore"
 )
 
 // CloudDSProvider implements the DatastoreProvider interface using the cloud datastore API,
 // for use outside of appengine environments.
 type CloudDSProvider struct {
-	Project string
+	Project string	
+	*datastore.Client
 }
+
+func (p *CloudDSProvider)newClient(ctx context.Context, project string) (*datastore.Client, error) {
+	if p.Client == nil {
+		client,err := datastore.NewClient(ctx, p.Project,
+			option.WithGRPCDialOption(grpc.WithBackoffMaxDelay(5*time.Second)),
+			option.WithGRPCDialOption(grpc.WithBlock()),
+			option.WithGRPCDialOption(grpc.WithTimeout(30*time.Second)))
+		p.Client = client
+		return client,err
+	}
+	return p.Client,nil
+}
+
 
 func (p CloudDSProvider)flattenQuery(in *Query) *datastore.Query {
 	out := datastore.NewQuery(in.Kind)
@@ -47,7 +64,8 @@ func (p CloudDSProvider)packKeyers(in []*datastore.Key) []Keyer {
 }
 
 func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error) {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
+	dsClient, err := p.newClient(ctx, p.Project)
+	if err != nil { return nil, err }
 	dsQuery := p.flattenQuery(q)
 
 	keys,err := dsClient.GetAll(ctx, dsQuery, dst)
@@ -63,7 +81,7 @@ func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) (
 }
 
 func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) error {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
+	dsClient, err := p.newClient(ctx, p.Project)
 	if err != nil { return err }
 
 	err = dsClient.Get(ctx, p.unpackKeyer(keyer), dst)
@@ -78,7 +96,7 @@ func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) e
 }
 
 func (p CloudDSProvider)GetMulti(ctx context.Context, keyers []Keyer, dst interface{}) error {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
+	dsClient, err := p.newClient(ctx, p.Project)
 	if err != nil { return err }
 	err = dsClient.GetMulti(ctx, p.unpackKeyers(keyers), dst)
 
@@ -93,7 +111,7 @@ func (p CloudDSProvider)GetMulti(ctx context.Context, keyers []Keyer, dst interf
 }
 
 func (p CloudDSProvider)Put(ctx context.Context, keyer Keyer, src interface{}) (Keyer, error) {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
+	dsClient, err := p.newClient(ctx, p.Project)
 	if err != nil { return nil,err }
 
 	key,error := dsClient.Put(ctx, p.unpackKeyer(keyer), src)
