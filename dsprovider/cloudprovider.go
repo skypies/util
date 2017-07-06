@@ -14,22 +14,18 @@ import(
 // CloudDSProvider implements the DatastoreProvider interface using the cloud datastore API,
 // for use outside of appengine environments.
 type CloudDSProvider struct {
-	Project string	
-	*datastore.Client
+	Project    string
+	client    *datastore.Client
 }
 
-func (p *CloudDSProvider)newClient(ctx context.Context, project string) (*datastore.Client, error) {
-	if p.Client == nil {
-		client,err := datastore.NewClient(ctx, p.Project,
-			option.WithGRPCDialOption(grpc.WithBackoffMaxDelay(5*time.Second)),
-			option.WithGRPCDialOption(grpc.WithBlock()),
-			option.WithGRPCDialOption(grpc.WithTimeout(30*time.Second)))
-		p.Client = client
-		return client,err
-	}
-	return p.Client,nil
+func NewCloudDSProvider(ctx context.Context, project string) (*CloudDSProvider, error) {
+	client,err := datastore.NewClient(ctx, project,
+		option.WithGRPCDialOption(grpc.WithBackoffMaxDelay(5*time.Second)),
+		option.WithGRPCDialOption(grpc.WithBlock()),
+		option.WithGRPCDialOption(grpc.WithTimeout(30*time.Second)))
+	provider := CloudDSProvider{Project: project, client: client}	
+	return &provider, err
 }
-
 
 func (p CloudDSProvider)flattenQuery(in *Query) *datastore.Query {
 	out := datastore.NewQuery(in.Kind)
@@ -64,11 +60,9 @@ func (p CloudDSProvider)packKeyers(in []*datastore.Key) []Keyer {
 }
 
 func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) ([]Keyer, error) {
-	dsClient, err := p.newClient(ctx, p.Project)
-	if err != nil { return nil, err }
 	dsQuery := p.flattenQuery(q)
 
-	keys,err := dsClient.GetAll(ctx, dsQuery, dst)
+	keys,err := p.client.GetAll(ctx, dsQuery, dst)
 	keyers := p.packKeyers(keys)
 
 	if err != nil {
@@ -81,10 +75,7 @@ func (p CloudDSProvider)GetAll(ctx context.Context, q *Query, dst interface{}) (
 }
 
 func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) error {
-	dsClient, err := p.newClient(ctx, p.Project)
-	if err != nil { return err }
-
-	err = dsClient.Get(ctx, p.unpackKeyer(keyer), dst)
+	err := p.client.Get(ctx, p.unpackKeyer(keyer), dst)
 	if err == datastore.ErrNoSuchEntity {
 		return ErrNoSuchEntity
 	} else if err != nil {
@@ -96,10 +87,7 @@ func (p CloudDSProvider)Get(ctx context.Context, keyer Keyer, dst interface{}) e
 }
 
 func (p CloudDSProvider)GetMulti(ctx context.Context, keyers []Keyer, dst interface{}) error {
-	dsClient, err := p.newClient(ctx, p.Project)
-	if err != nil { return err }
-	err = dsClient.GetMulti(ctx, p.unpackKeyers(keyers), dst)
-
+	err := p.client.GetMulti(ctx, p.unpackKeyers(keyers), dst)
 	if err == datastore.ErrNoSuchEntity {
 		return ErrNoSuchEntity
 	} else if err != nil {
@@ -111,30 +99,20 @@ func (p CloudDSProvider)GetMulti(ctx context.Context, keyers []Keyer, dst interf
 }
 
 func (p CloudDSProvider)Put(ctx context.Context, keyer Keyer, src interface{}) (Keyer, error) {
-	dsClient, err := p.newClient(ctx, p.Project)
-	if err != nil { return nil,err }
-
-	key,error := dsClient.Put(ctx, p.unpackKeyer(keyer), src)
+	key,error := p.client.Put(ctx, p.unpackKeyer(keyer), src)
 	return Keyer(key), error
 }	
 func (p CloudDSProvider)PutMulti(ctx context.Context, keyers []Keyer, src interface{}) ([]Keyer, error) {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
-	if err != nil { return nil,err }
-
-	keys,err := dsClient.PutMulti(ctx, p.unpackKeyers(keyers), src)
+	keys,err := p.client.PutMulti(ctx, p.unpackKeyers(keyers), src)
 	return p.packKeyers(keys), err
 }
 func (p CloudDSProvider)Delete(ctx context.Context, keyer Keyer) error {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
-	if err != nil { return err }
-	err = dsClient.Delete(ctx, p.unpackKeyer(keyer))
+	err := p.client.Delete(ctx, p.unpackKeyer(keyer))
 	if err ==	datastore.ErrNoSuchEntity { return ErrNoSuchEntity }
 	return err
 }	
 func (p CloudDSProvider)DeleteMulti(ctx context.Context, keyers []Keyer) error {
-	dsClient, err := datastore.NewClient(ctx, p.Project)
-	if err != nil { return err }
-	err = dsClient.DeleteMulti(ctx, p.unpackKeyers(keyers))
+	err := p.client.DeleteMulti(ctx, p.unpackKeyers(keyers))
 	if err ==	datastore.ErrNoSuchEntity { return ErrNoSuchEntity }
 	return err
 }

@@ -64,7 +64,7 @@ func putObjs(ctx context.Context, p DatastoreProvider, t *testing.T, n int) ([]T
 func TestProviderAPI(t *testing.T) {
 	testProviderAPI(t, AppengineDSProvider{})
 	// Sadly, the aetest framework hangs on the first Put from the cloud client
-	//testProviderAPI(t, CloudDSProvider{AppID})
+	//testProviderAPI(t, NewCloudDSProvider(AppID))
 }
 // {{{ testProviderAPI
 
