@@ -2,12 +2,16 @@ package gaeutil
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 	"google.golang.org/appengine/memcache"
 	"google.golang.org/appengine/log"
 )
@@ -177,4 +181,42 @@ func LoadFromMemcacheShardsTTL(ctx context.Context, name string, ptr interface{}
 	dstValue.Set(srcValue)
 
 	return nil
+}
+
+// Expects JSON request {"Name": "singletonName", "Body": "BASE64foobar=="}
+func SaveSingletonToMemcacheHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		http.Error(w, "Please send a JSON encoded request body", http.StatusBadRequest)
+		return
+	}
+
+	jsonMap := map[string]interface{}{}
+	if err := json.NewDecoder(r.Body).Decode(&jsonMap); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	name := jsonMap["Name"].(string)
+	if name == "" {
+		http.Error(w, "needs JSON field 'Name'", http.StatusBadRequest)
+		return
+	}
+
+	bodyStr := jsonMap["Body"].(string)
+	data, err := base64.StdEncoding.DecodeString(bodyStr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("needs JSON field 'Body' in base64; %v", err), http.StatusBadRequest)
+		return
+	} else if len(data) == 0 {
+		http.Error(w, "'Body' field was empty'", http.StatusBadRequest)
+		return
+	}
+
+	ctx := appengine.NewContext(r)
+	if err := SaveSingletonToMemcache(ctx, name, data); err != nil {
+		http.Error(w, fmt.Sprintf("memcache save err:%v", err), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "OK\n")
 }
