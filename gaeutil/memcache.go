@@ -45,10 +45,10 @@ func SaveSingletonToMemcache(c context.Context, name string, data []byte) error 
 func LoadShardedSingletonFromMemcache(c context.Context, name string) ([]byte, error) {
 	return bytesFromMemcacheShards(c, name)
 }
+
 func SaveShardedSingletonToMemcache(c context.Context, name string, data []byte) error {
 	return bytesToMemcacheShards(c, name, data)
 }
-
 
 func bytesToMemcacheShards(c context.Context, key string, b []byte) error {
 	if len(b) > MaxChunks * Chunksize {
@@ -184,42 +184,36 @@ func LoadFromMemcacheShardsTTL(ctx context.Context, name string, ptr interface{}
 	return nil
 }
 
+
+// The SaveSingletonToMemcache* routines are a kludge to allow appengine flexible
+// environment apps (e.g. the pi/cmd/consolidator) to write into memcache, in the absence
+// of any cloud APIs for doing so. The actual write is done by a friendly appengine standard
+// app (e.g. flightdb/app/frontend), running a handler, which the appengine flexible app sends
+// a POST to.
+
+// memcacheSingletonEntry is for data transfer by HTTP
 type memcacheSingletonEntry struct {
 	Name   string
 	Body []byte
 }
 
-// Expects JSON request {"Name": "singletonName", "Body": "BASE64foobar=="}
+// SaveSingletonToMemcacheHandler is a HTTP handler that expects an application/json request
+// body that encodes a memcacheSingletonEntry struct. (The golang json libs take care of all
+// the base64 encoding/decoding transparently). The entry will be written into memcache.
 func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		http.Error(w, "Please send a JSON encoded request body", http.StatusBadRequest)
 		return
 	}
 
-	// TODO: use the new type
 	entry := memcacheSingletonEntry{}
-
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
 		http.Error(w, fmt.Sprintf("SSTMH/JsonDecode err:%v", err.Error()), http.StatusBadRequest)
 		return
-	}
-
-	if entry.Name == "" {
-		http.Error(w, "SSTMH needs JSON field 'Name'", http.StatusBadRequest)
+	} else if entry.Name == "" {
+		http.Error(w, "SSTMH needs non-empty 'Name'", http.StatusBadRequest)
 		return
 	}
-
-/*
-	// When receiving this object, field Body will have been base64 encoded into a string
-	data, err := base64.StdEncoding.DecodeString(string(entry.Body))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("SSTMH needs JSON base64 'Body'; %v.\nHad:-\n%s\n--\n", err, entry.Body), http.StatusBadRequest)
-		return
-	} else if len(data) == 0 {
-		http.Error(w, "SSTMH 'Body' field was empty'", http.StatusBadRequest)
-		return
-	}
-*/
 
 	if err := SaveSingletonToMemcache(ctx, entry.Name, entry.Body); err != nil {
 		http.Error(w, fmt.Sprintf("SSTMH/memcache save err:%v", err), http.StatusInternalServerError)
@@ -229,9 +223,10 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 	fmt.Fprintf(w, "OK\n")
 }
 
+// SaveSingletonToMemcacheURL sends a HTTP request to the given URL, which should route to
+// the SaveSingletonToMemcacheHandler routine above.
 func SaveSingletonToMemcacheURL(name string, body []byte, url string) error {
-	entry := memcacheSingletonEntry{Name:name, Body:body}
-	byt,_ := json.Marshal(entry)
+	byt,_ := json.Marshal(memcacheSingletonEntry{Name:name, Body:body})
 
 	resp,err := http.Post("http://"+url, "application/json; charset=utf-8", bytes.NewBuffer(byt))
 	if err != nil {
