@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"time"
@@ -211,7 +212,7 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 	// When receiving this object, field Body will have been base64 encoded into a string
 	data, err := base64.StdEncoding.DecodeString(string(entry.Body))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("SSTMH needs JSON a base64 'Body'; %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("SSTMH needs JSON base64 'Body'; %v.\nHad:-\n%s\n--\n", err, entry.Body), http.StatusBadRequest)
 		return
 	} else if len(data) == 0 {
 		http.Error(w, "SSTMH 'Body' field was empty'", http.StatusBadRequest)
@@ -227,19 +228,16 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 }
 
 func SaveSingletonToMemcacheURL(name string, body []byte, url string) error {
-	client := http.Client{}
-
 	entry := memcacheSingletonEntry{Name:name, Body:body}
+	byt,_ := json.Marshal(entry)
 
-	//byt,err := json.MarshalIndent(t, "", "  ")
-	buf := new(bytes.Buffer)
-	json.NewEncoder(buf).Encode(entry)
-
-	resp,err := client.Post("https://"+url, "application/json; charset=utf-8", buf)
+	resp,err := http.Post("http://"+url, "application/json; charset=utf-8", bytes.NewBuffer(byt))
 	if err != nil {
-		return fmt.Errorf("client.Post to %s err:%v\n", url, err)
+		return fmt.Errorf("client.Post to %s err: %v\n", url, err)
 	} else if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s returned %v\n", url, resp.StatusCode)
+		defer resp.Body.Close()
+		body,_ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s returned %q\n%s\n", url, resp.Status, body)
 	}
 	
 	return nil
