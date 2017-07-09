@@ -2,7 +2,7 @@ package gaeutil
 
 import (
 	"bytes"
-	"encoding/base64"
+	//"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -221,7 +221,7 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 	}
 */
 
-	if err := SaveSingletonToMemcache(ctx, entry.Name, entry.Data); err != nil {
+	if err := SaveSingletonToMemcache(ctx, entry.Name, entry.Body); err != nil {
 		http.Error(w, fmt.Sprintf("SSTMH/memcache save err:%v", err), http.StatusInternalServerError)
 		return
 	}
