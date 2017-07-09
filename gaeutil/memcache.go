@@ -14,7 +14,6 @@ import (
 
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"
-	"google.golang.org/appengine/urlfetch"
 )
 
 const Chunksize = 950000  // A single memcache item can't be bigger than 1000000 bytes
@@ -200,35 +199,35 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 	entry := memcacheSingletonEntry{}
 
 	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("SSTMH/JsonDecode err:%v", err.Error()), http.StatusBadRequest)
 		return
 	}
 
 	if entry.Name == "" {
-		http.Error(w, "needs JSON field 'Name'", http.StatusBadRequest)
+		http.Error(w, "SSTMH needs JSON field 'Name'", http.StatusBadRequest)
 		return
 	}
 
 	// When receiving this object, field Body will have been base64 encoded into a string
 	data, err := base64.StdEncoding.DecodeString(string(entry.Body))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("needs JSON field 'Body' in base64; %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("SSTMH needs JSON a base64 'Body'; %v", err), http.StatusBadRequest)
 		return
 	} else if len(data) == 0 {
-		http.Error(w, "'Body' field was empty'", http.StatusBadRequest)
+		http.Error(w, "SSTMH 'Body' field was empty'", http.StatusBadRequest)
 		return
 	}
 
 	if err := SaveSingletonToMemcache(ctx, entry.Name, data); err != nil {
-		http.Error(w, fmt.Sprintf("memcache save err:%v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("SSTMH/memcache save err:%v", err), http.StatusInternalServerError)
 		return
 	}
 
 	fmt.Fprintf(w, "OK\n")
 }
 
-func SaveSingletonToMemcacheURL(ctx context.Context, name string, body []byte, url string) error {
-	client := urlfetch.Client(ctx)
+func SaveSingletonToMemcacheURL(name string, body []byte, url string) error {
+	client := http.Client{}
 
 	entry := memcacheSingletonEntry{Name:name, Body:body}
 
