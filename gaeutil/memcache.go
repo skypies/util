@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/memcache"
+
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/urlfetch"
 )
 
 const Chunksize = 950000  // A single memcache item can't be bigger than 1000000 bytes
@@ -183,27 +184,33 @@ func LoadFromMemcacheShardsTTL(ctx context.Context, name string, ptr interface{}
 	return nil
 }
 
+type memcacheSingletonEntry struct {
+	Name   string
+	Body []byte
+}
+
 // Expects JSON request {"Name": "singletonName", "Body": "BASE64foobar=="}
-func SaveSingletonToMemcacheHandler(w http.ResponseWriter, r *http.Request) {
+func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		http.Error(w, "Please send a JSON encoded request body", http.StatusBadRequest)
 		return
 	}
 
-	jsonMap := map[string]interface{}{}
-	if err := json.NewDecoder(r.Body).Decode(&jsonMap); err != nil {
+	// TODO: use the new type
+	entry := memcacheSingletonEntry{}
+
+	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	name := jsonMap["Name"].(string)
-	if name == "" {
+	if entry.Name == "" {
 		http.Error(w, "needs JSON field 'Name'", http.StatusBadRequest)
 		return
 	}
 
-	bodyStr := jsonMap["Body"].(string)
-	data, err := base64.StdEncoding.DecodeString(bodyStr)
+	// When receiving this object, field Body will have been base64 encoded into a string
+	data, err := base64.StdEncoding.DecodeString(string(entry.Body))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("needs JSON field 'Body' in base64; %v", err), http.StatusBadRequest)
 		return
@@ -212,11 +219,29 @@ func SaveSingletonToMemcacheHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := appengine.NewContext(r)
-	if err := SaveSingletonToMemcache(ctx, name, data); err != nil {
+	if err := SaveSingletonToMemcache(ctx, entry.Name, data); err != nil {
 		http.Error(w, fmt.Sprintf("memcache save err:%v", err), http.StatusInternalServerError)
 		return
 	}
 
 	fmt.Fprintf(w, "OK\n")
+}
+
+func SaveSingletonToMemcacheURL(ctx context.Context, name string, body []byte, url string) error {
+	client := urlfetch.Client(ctx)
+
+	entry := memcacheSingletonEntry{Name:name, Body:body}
+
+	//byt,err := json.MarshalIndent(t, "", "  ")
+	buf := new(bytes.Buffer)
+	json.NewEncoder(buf).Encode(entry)
+
+	resp,err := client.Post("https://"+url, "application/json; charset=utf-8", buf)
+	if err != nil {
+		return fmt.Errorf("client.Post to %s err:%v\n", url, err)
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s returned %v\n", url, resp.StatusCode)
+	}
+	
+	return nil
 }
