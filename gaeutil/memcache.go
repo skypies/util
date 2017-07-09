@@ -209,6 +209,7 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 		return
 	}
 
+/*
 	// When receiving this object, field Body will have been base64 encoded into a string
 	data, err := base64.StdEncoding.DecodeString(string(entry.Body))
 	if err != nil {
@@ -218,8 +219,9 @@ func SaveSingletonToMemcacheHandler(ctx context.Context, w http.ResponseWriter, 
 		http.Error(w, "SSTMH 'Body' field was empty'", http.StatusBadRequest)
 		return
 	}
+*/
 
-	if err := SaveSingletonToMemcache(ctx, entry.Name, data); err != nil {
+	if err := SaveSingletonToMemcache(ctx, entry.Name, entry.Data); err != nil {
 		http.Error(w, fmt.Sprintf("SSTMH/memcache save err:%v", err), http.StatusInternalServerError)
 		return
 	}
