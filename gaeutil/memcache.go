@@ -229,10 +229,11 @@ func SaveSingletonToMemcacheURL(name string, body []byte, url string) error {
 	byt,_ := json.Marshal(memcacheSingletonEntry{Name:name, Body:body})
 
 	resp,err := http.Post("http://"+url, "application/json; charset=utf-8", bytes.NewBuffer(byt))
+	defer resp.Body.Close()
+
 	if err != nil {
 		return fmt.Errorf("client.Post to %s err: %v\n", url, err)
 	} else if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
 		body,_ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("%s returned %q\n%s\n", url, resp.Status, body)
 	}
