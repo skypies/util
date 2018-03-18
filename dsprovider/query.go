@@ -12,6 +12,7 @@ type Query struct {
 	OrderStr        string
 	LimitVal        int
 	KeysOnlyVal     bool
+	DistinctVals    bool
 }
 
 type Filter struct {
@@ -29,6 +30,7 @@ func (q *Query)String() string {
 	if q.OrderStr != ""          { str += fmt.Sprintf("  .Order(%q)\n", q.OrderStr) }
 	if q.LimitVal != 0           { str += fmt.Sprintf("  .Limit(%d)\n", q.LimitVal) }
 	if q.KeysOnlyVal             { str += fmt.Sprintf("  .KeysOnly()\n") }
+	if q.DistinctVals            { str += fmt.Sprintf("  .Distinct()\n") }
 	return str
 }
 
@@ -56,6 +58,11 @@ func (q *Query)Limit(l int) *Query {
 
 func (q *Query)KeysOnly() *Query {
 	q.KeysOnlyVal = true
+	return q
+}
+
+func (q *Query)Distinct() *Query {
+	q.DistinctVals = true
 	return q
 }
 
