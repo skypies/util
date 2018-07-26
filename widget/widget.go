@@ -14,7 +14,16 @@ import (
 
 // {{{ FormValueDateRange
 
-// This widget assumes the values 'date', 'range_from', and 'range_to'
+// Return values:
+//   s  will be the first second of the first day;
+//   e  will be the last second of the last day;
+// For ranges of exactly one day, e and s will be in the same day.
+//
+// Formats:
+//   ?date=today
+//   ?date=yesterday
+//   ?date=day&day=2006/01/02
+//   ?date=range&range_from=2006/01/01&range_to=2018/01/01
 func FormValueDateRange(r *http.Request) (s,e time.Time, err error) {
 	err = nil
 
