@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"
@@ -229,7 +229,9 @@ func SaveSingletonToMemcacheURL(name string, body []byte, url string) error {
 	byt,_ := json.Marshal(memcacheSingletonEntry{Name:name, Body:body})
 
 	resp,err := http.Post("http://"+url, "application/json; charset=utf-8", bytes.NewBuffer(byt))
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		return fmt.Errorf("client.Post to %s err: %v\n", url, err)

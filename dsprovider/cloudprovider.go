@@ -5,7 +5,7 @@ package dsprovider
 import(
 	"fmt"
 	"time"
-	"golang.org/x/net/context"
+	"context"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"cloud.google.com/go/datastore"
