@@ -1,8 +1,8 @@
-package gaeutil
+package ae
 
 import (
 	"bytes"
-	//"encoding/base64"
+	"golang.org/x/net/context"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"time"
 
-	"context"
 
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"

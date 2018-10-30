@@ -1,12 +1,12 @@
-package gaeutil
+package ae
 
 import(
 	"bytes"
+	"golang.org/x/net/context"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	
-	"context"
 	"google.golang.org/appengine/datastore"
 )
 
@@ -32,7 +32,7 @@ type Singleton struct {
 	Value []byte `datastore:",noindex"`
 }
 
-var ErrNoSuchEntityDS = errors.New("gaeutil/datastore: no such entity")
+var ErrNoSuchEntityDS = errors.New("ae/datastore: no such entity")
 
 func LoadSingletonFromDatastore(c context.Context, name string) ([]byte, error) {
 	s := Singleton{}

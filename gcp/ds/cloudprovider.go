@@ -1,15 +1,19 @@
-package dsprovider
-
-// https://godoc.org/cloud.google.com/go/datastore
+package ds
 
 import(
 	"fmt"
+	"log"
+	"net/http"
+	"os"
 	"time"
-	"context"
+
+	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"cloud.google.com/go/datastore"
 )
+
+var Debug = false
 
 // CloudDSProvider implements the DatastoreProvider interface using the cloud datastore API,
 // for use outside of appengine environments.
@@ -24,6 +28,9 @@ func NewCloudDSProvider(ctx context.Context, project string) (*CloudDSProvider, 
 		option.WithGRPCDialOption(grpc.WithBlock()),
 		option.WithGRPCDialOption(grpc.WithTimeout(30*time.Second)))
 	provider := CloudDSProvider{Project: project, client: client}	
+
+	log.SetOutput(os.Stdout)
+
 	return &provider, err
 }
 
@@ -142,3 +149,40 @@ func (p CloudDSProvider)KeyParent(in Keyer) Keyer {
 	return nil
 }
 func (p CloudDSProvider)KeyName(in Keyer) string { return p.unpackKeyer(in).Name }
+
+
+func (p CloudDSProvider)HTTPClient(ctx context.Context) *http.Client {
+	c := http.Client{}
+	return &c
+}
+
+
+
+func (p CloudDSProvider)Debugf(ctx context.Context, format string, args ...interface{}) {
+	if Debug {log.Printf(format, args...)}
+}
+func (p CloudDSProvider)Infof(ctx context.Context, format string,args ...interface{}) {
+	log.Printf(format, args...)
+}
+func (p CloudDSProvider)Errorf(ctx context.Context, format string,args ...interface{}) {
+	log.Printf(format, args...)
+}
+func (p CloudDSProvider)Warningf(ctx context.Context, format string,args ...interface{}) {
+	log.Printf(format, args...)
+}
+func (p CloudDSProvider)Criticalf(ctx context.Context, format string,args ...interface{}) {
+	log.Printf(format, args...)
+}
+
+
+/*
+func (p CloudDSProvider)MemcacheGet(ctx context.Context, name string) ([]byte, error) {
+	return nil, ErrNoMemcacheService
+}
+func (p CloudDSProvider)MemcacheSet(ctx context.Context, name string, data []byte) error {
+	return ErrNoMemcacheService
+}	
+func (p CloudDSProvider)MemcacheDelete(ctx context.Context, name string) error {
+	return ErrNoMemcacheService
+}
+*/

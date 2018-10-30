@@ -1,4 +1,4 @@
-package dsprovider
+package ds
 
 import "fmt"
 

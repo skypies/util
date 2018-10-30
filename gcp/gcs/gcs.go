@@ -1,12 +1,11 @@
 package gcs
 
 import (
+	"golang.org/x/net/context"
 	"fmt"
 	"io"
 
 	"cloud.google.com/go/storage"
-	"context"
-	"google.golang.org/appengine/log"
 )
 
 type RWHandle struct {
@@ -28,7 +27,7 @@ func (h *RWHandle)IOWriter() io.Writer {
 func Exists(ctx context.Context, bucketname string, filename string) (bool,error) {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		log.Errorf(ctx, "failed to get a client: %v", err)
+		//log.Errorf(ctx, "failed to get a client: %v", err)
 		return false, err
 	}
 	
@@ -49,7 +48,7 @@ func Exists(ctx context.Context, bucketname string, filename string) (bool,error
 func OpenRW(ctx context.Context, bucketname string, filename string, contentType string) (*RWHandle, error) {
 	handle := RWHandle{}
 	if c, err := storage.NewClient(ctx); err != nil {
-		log.Errorf(ctx, "failed to get a client: %v", err)
+		//log.Errorf(ctx, "failed to get a client: %v", err)
 		return nil, err
 	} else {
 		handle.Client = c
