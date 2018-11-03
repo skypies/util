@@ -49,11 +49,4 @@ type DatastoreProvider interface {
 	Warningf(ctx context.Context, format string, args ...interface{})
 	Errorf(ctx context.Context, format string, args ...interface{})
 	Criticalf(ctx context.Context, format string, args ...interface{})
-
-	// Memcache support
-/* Not now. Maybe later.
-	MemcacheGet(ctx context.Context, name string) ([]byte, error)
-	MemcacheSet(ctx context.Context, name string, data []byte) error
-	MemcacheDelete(ctx context.Context, name string) error
-*/
 }
