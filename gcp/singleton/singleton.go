@@ -27,10 +27,11 @@ import(
 
 type SingletonProvider struct {
 	ds.DatastoreProvider
+	ErrIfNotFound bool
 }
 
 func NewProvider(p ds.DatastoreProvider) SingletonProvider {
-	return SingletonProvider{p}
+	return SingletonProvider{p,false}
 }
 
 func (sp SingletonProvider)singletonDSKey(c context.Context, name string) ds.Keyer {
@@ -45,8 +46,12 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, obj i
 			return err
 		}
 
-		// Swallow ErrNoSuchEntity, else we need explicit initializer code everywhere
-		sp.Warningf(ctx, "ReadSingleton('%s'), but ds.ErrNoSuchEntity; initializing ?", name)
+		// Some consumers need to know about this; some don't care.
+		if sp.ErrIfNotFound {
+			return err
+		} else {
+			sp.Warningf(ctx, "ReadSingleton('%s'), but ds.ErrNoSuchEntity; initializing ?", name)
+		}
 	}
 
 	if s.Value == nil {
