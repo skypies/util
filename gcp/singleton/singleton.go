@@ -62,9 +62,18 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f sin
 		return nil
 	}
 
+	var reader io.Reader
+	var err error
 	buf := bytes.NewBuffer(s.Value)
+	
+	reader = buf
+	if f != nil {
+		if reader,err = f(buf); err != nil {
+			return err
+		}
+	}
 
-	if err := gob.NewDecoder(buf).Decode(ptr); err != nil {
+	if err := gob.NewDecoder(reader).Decode(ptr); err != nil {
 		sp.Warningf(ctx, "ReadSingleton('%s'), %d bytes, gob error: %v", name, len(s.Value), err)
 		return err
 	}
@@ -73,17 +82,27 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f sin
 }
 
 
-func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, f singleton.NewWriterFunc, ptr interface{}) error {
+func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, f singleton.NewWriteCloserFunc, ptr interface{}) error {
 	var buf bytes.Buffer
 	var writer io.Writer
+	var writecloser io.WriteCloser
 	
+	// All this type chicanery is so we can call Close() on the NewWriterFunc's thing, which is
+	// needed for gzip.
 	writer = &buf
 	if f != nil {
-		writer = f(&buf)
+		writecloser = f(&buf)
+		writer = writecloser
 	}
 
 	if err := gob.NewEncoder(writer).Encode(ptr); err != nil {
 		return err
+	}
+
+	if f != nil {
+		if err := writecloser.Close(); err != nil {
+			return err
+		}
 	}
 
 	data := buf.Bytes()

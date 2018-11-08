@@ -42,12 +42,12 @@ type Singleton struct {
 
 // These types might already exist in pkg/io ?
 type NewReaderFunc func(io.Reader) (io.Reader, error)
-type NewWriterFunc func(io.Writer) io.Writer
+type NewWriteCloserFunc func(io.Writer) io.WriteCloser // gzip needs us to call it's .Close()
 
 type SingletonProvider interface {
 	// Functions can be nil; there are some gzip ones below.
 	ReadSingleton (ctx context.Context, name string, f NewReaderFunc, ptr interface{}) error
-	WriteSingleton(ctx context.Context, name string, f NewWriterFunc, ptr interface{}) error
+	WriteSingleton(ctx context.Context, name string, f NewWriteCloserFunc, ptr interface{}) error
 }
 
 
@@ -57,6 +57,6 @@ func GzipReader(rdr io.Reader) (io.Reader, error) {
 	return rdr,err
 }
 
-func GzipWriter(wtr io.Writer) io.Writer {
+func GzipWriter(wtr io.Writer) io.WriteCloser {
 	return gzip.NewWriter(wtr)
 }
