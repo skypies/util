@@ -17,6 +17,7 @@ s := singleton.NewProvider(p)
 import(
 	"bytes"
 	"encoding/gob"
+	"io"
 
 	"golang.org/x/net/context"
 
@@ -38,8 +39,10 @@ func (sp SingletonProvider)singletonDSKey(c context.Context, name string) ds.Key
 	return sp.NewNameKey(c, "Singleton", name, nil)
 }
 
-func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, obj interface{}) error {
+func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f singleton.NewReaderFunc, ptr interface{}) error {
 	s := singleton.Singleton{}
+
+	sp.Infof(ctx, "Reading singleton '%s' into %T", name, ptr)
 
 	if err := sp.Get(ctx, sp.singletonDSKey(ctx,name), &s); err != nil {
 		if err != ds.ErrNoSuchEntity {
@@ -61,7 +64,8 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, obj i
 
 	buf := bytes.NewBuffer(s.Value)
 
-	if err := gob.NewDecoder(buf).Decode(obj); err != nil {
+	if err := gob.NewDecoder(buf).Decode(ptr); err != nil {
+		sp.Warningf(ctx, "ReadSingleton('%s'), %d bytes, gob error: %v", name, len(s.Value), err)
 		return err
 	}
 
@@ -69,9 +73,16 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, obj i
 }
 
 
-func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, obj interface{}) error {
+func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, f singleton.NewWriterFunc, ptr interface{}) error {
 	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(obj); err != nil {
+	var writer io.Writer
+	
+	writer = &buf
+	if f != nil {
+		writer = f(&buf)
+	}
+
+	if err := gob.NewEncoder(writer).Encode(ptr); err != nil {
 		return err
 	}
 
@@ -85,3 +96,5 @@ func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, obj 
 	_,err := sp.Put(ctx, sp.singletonDSKey(ctx,name), &s)
 	return err
 }
+
+
