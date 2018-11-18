@@ -4,7 +4,6 @@ package memcache
 
 // This suite assumes a memcached on 127.0.0.1:11211
 
-
 import (
 	"encoding/gob"
 	"strings"

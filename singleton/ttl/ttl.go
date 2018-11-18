@@ -27,14 +27,14 @@ func NewProvider(d time.Duration, p singleton.SingletonProvider) TTLSingletonPro
 	return sp
 }
 
-
-// Note that the pointer gets flattened in this roundtrip through encoding/gob.
-// When submitted to Save*, the interface is a pointer to an object; but when retrived via
-// Load*, the interface contains the actual object originally pointed to.
-// There is some reflection nonsense needed to copy results between interfaces.
+// Note: if the Obj interface is a pointer, and the whole object is roundtripped
+// through encoding/gob, then it will eventually reappear flattened into a struct (gob
+// does not attempt to recreate the indirection via pointer).
+// So there is some reflection nonsense needed to copy results between interfaces, and to
+// handle whether it has been flattened
 // https://github.com/mohae/deepcopy/blob/master/deepcopy.go
 type explodingObj struct {
-	Obj interface{}
+	Obj interface{} // should be a pointer !
 	Expires time.Time
 }
 
@@ -49,21 +49,26 @@ func (sp TTLSingletonProvider)ReadSingleton(ctx context.Context, name string, f 
 	// Assert that 'ptr' is indeed a pointer to something (and is not nil)
 	if reflect.TypeOf(ptr).Kind() != reflect.Ptr {
 		return fmt.Errorf("interface arg was '%s', expected pointer", reflect.TypeOf(ptr))
-
 	}
 	if reflect.ValueOf(ptr).IsNil() {
 		return fmt.Errorf("interface arg was nil pointer")
 	}
 
+	// The extracted obj might still be a pointer (i.e. memory singleton), or if it went through
+	// gob serialization, it might be flatted into an object. Handle both cases.
+	srcValue := reflect.ValueOf(eObj.Obj)
+	if srcValue.Type().Kind() == reflect.Ptr {
+		srcValue = srcValue.Elem() // Follow the pointer
+	}
+	dstValue := reflect.ValueOf(ptr).Elem() // Follow the pointer
+	
 	// Assert that ptr points to the same type of thing that we have in the explodey obj
-	if reflect.ValueOf(ptr).Elem().Type() != reflect.TypeOf(eObj.Obj) {
+	if srcValue.Type() != dstValue.Type() {
 		return fmt.Errorf("type mismatch; asked to load '%s' into '%s'",
-			reflect.TypeOf(eObj.Obj), reflect.ValueOf(ptr).Elem().Type())
+			srcValue.Type(), dstValue.Type())
 	}
 
 	// Now copy whatever is inside of eObj.Obj into whatever the pointer points to
-	srcValue := reflect.ValueOf(eObj.Obj)
-	dstValue := reflect.ValueOf(ptr).Elem() // Follow the pointer
 	dstValue.Set(srcValue)
 
 	return nil
@@ -71,5 +76,5 @@ func (sp TTLSingletonProvider)ReadSingleton(ctx context.Context, name string, f 
 
 func (sp TTLSingletonProvider)WriteSingleton(ctx context.Context, name string, f singleton.NewWriteCloserFunc, ptr interface{}) error {
 	o := explodingObj{ptr, time.Now().Add(sp.TTL)}
-	return sp.SingletonProvider.WriteSingleton(ctx, name, f, o)
+	return sp.SingletonProvider.WriteSingleton(ctx, name, f, &o)
 }
