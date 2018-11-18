@@ -40,35 +40,14 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f sin
 		myBytes,err = sp.loadSingletonBytes(name)
 	}
 
-	if err != nil {
+	if err == singleton.ErrNoSuchEntity {
+		return err // Don't decorate this error
+	} else if err != nil {
 		return fmt.Errorf("ReadSingleton/loadBytes: %v", err)
 	} else if myBytes == nil {
 		// This happens if the object was not found; don't try to decode it.
 		return nil
 	}
-
-/*
-	// Hack, in case I'm going mad - use the orig code block from ref/
-	if true {
-		buf := bytes.NewBuffer(myBytes)
-		if gzipReader,err := gzip.NewReader(buf); err != nil {
-			return fmt.Errorf("airframecache: could not gzip.NewReader: %v", err)
-		} else if err := gob.NewDecoder(gzipReader).Decode(obj); err != nil {
-			return fmt.Errorf("airframecache: could not decode: %v", err)
-		} else if err := gzipReader.Close(); err != nil {
-			return fmt.Errorf("airframecache: could not gzipReader.Close: %v", err)
-		}
-	}
-*/
-/*
-	var reader io.Reader
-	buf := bytes.NewBuffer(myBytes)
-
-	reader,err = gzip.NewReader(buf)
-	if err != nil {
-		return fmt.Errorf("Gah, bad reader: %v", err)
-	}
-*/
 	
 	var reader io.Reader
 	buf := bytes.NewBuffer(myBytes)
@@ -83,7 +62,7 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f sin
 	if err := gob.NewDecoder(reader).Decode(obj); err != nil {
 		return fmt.Errorf("ReadSingleton/Decode: %v (%d bytes)", err, len(myBytes))
 	}
-	fmt.Printf("(loaded %d bytes from memcache)\n", len(myBytes))
+	// fmt.Printf("(loaded %d bytes from memcache)\n", len(myBytes))
 	
 	return nil
 
@@ -161,7 +140,7 @@ func (sp SingletonProvider)saveSingletonShardedBytes(key string, b []byte) error
 			len(b), sp.ShardCount, Chunksize)
 	}
 
-	fmt.Printf("(saving over %d shards)\n", sp.ShardCount)
+	// fmt.Printf("(saving over %d shards)\n", sp.ShardCount)
 	
 	for i:=0; i<len(b); i+=Chunksize {
 		k := fmt.Sprintf("=%d=%s",i,key)
@@ -170,11 +149,11 @@ func (sp SingletonProvider)saveSingletonShardedBytes(key string, b []byte) error
 
 		item := mclib.Item{ Key:k , Value:b[s:e+1] } // slice sytax is [s,e)
 
-		fmt.Printf("  (saving shard %d ...)\n", i)
+		// fmt.Printf("  (saving shard %d ...)\n", i)
 		if err := sp.Client.Set(&item); err != nil {
 			return err
 		}
-		fmt.Printf("  (... shard %d saved !)\n", i)
+		// fmt.Printf("  (... shard %d saved !)\n", i)
 	}
 
 	return nil
@@ -187,7 +166,7 @@ func  (sp SingletonProvider)loadSingletonShardedBytes(key string) ([]byte, error
 	keys := []string{}
 	for i:=0; i<sp.ShardCount; i++ { keys = append(keys, fmt.Sprintf("=%d=%s",i*Chunksize,key)) }
 
-	fmt.Printf("(loading over %d shards)\n", sp.ShardCount)
+	// fmt.Printf("(loading over %d shards)\n", sp.ShardCount)
 
 	if items,err := sp.Client.GetMulti(keys); err != nil {
 		return nil, fmt.Errorf("MCShards/GetMulti/'%s' err: %v\n", key, err)
@@ -198,7 +177,7 @@ func  (sp SingletonProvider)loadSingletonShardedBytes(key string) ([]byte, error
 			if item,exists := items[keys[i]]; exists==false {
 				break
 			} else {
-				fmt.Printf("  (shard %d loaded)\n", i)
+				// fmt.Printf("  (shard %d loaded)\n", i)
 				b = append(b, item.Value...)
 			}
 		}
