@@ -1,40 +1,52 @@
 A bunch of small helper libraries for Google Cloud Platform APIs.
+Goal: get off appengine.
 
-These should all be usable outside of appengine.
+Things done:
+- clear division into util/gcp/ds, and ae/ds.
+- implement a datastore-provider based Singleton backend
+- implement a memcache-server based Singleton backend
+- implement TTL, combo, and in-memory singletons (a pleasure to write ;)
 
-TODO:
+- So, FIXUP PLAN ...
+  - setup flightdb/config/sypies-values.go, to hold memcache server config
+  - setup pi/consolidator/config/skypies-values.go, too; bleargh, can't even be symlinks
+  - teach fr24poller to use a combo singleton (so refs will be in memcache)
+  - flightdb/addtrackfrag
+    - change the routine to take sched/airframe refs as args, and not look them up
+    - add goroutine to consolidator, to keep a local copy of refs up to date (via combo)
+  - pi/airspace/memcache
+    - rewrite pi/airspace/memcache to take a singleton provider (and rename to singletons ?)
+    - get consolidator using it again (memcache only provider), instead of URL hack
+  - pi/airspace/realtime 
+    - convert the top handler to take an explicit SingletonProvider as arg
+    - in flightdb/app/frontend, wrap up the handler in a handler that sets up a singleton thing
+    - then wewrite the routines in pi/airspace/realtime to use the SP
+      - can move the ref. stuff to use the new API
+      - can pass the SP into pi/airspace/memcache
 
-* ae.SaveSingletonToMemcacheHandler - Move this stuff out of the way, into DSProvider
-* metar - all messed up
-* ui/batch, backend/foia - calls appengine/taskqueue
-* backend/fr24poller - calls appengine/memcache
-* ref/ref.go - calls ae.Singleton stuff
+- THEN,
+  - complaints/app/heatmap - flip over to SPs, check prod memcache config
+  - remove old flightdb/ref/ junk
+  - remove old util/ae junk
+  - remove URL memcache hack
+  - bask :)
 
-Thoughts on ref.
-- ref calls singleton code direct from ae/ds
-- there is some singleton code in gcp/ds, that stubs out memcache
+CURRENT NOTES
 
-1. we could make the high level {Load,Save,Delete}Singleton part of provider interface
-It would be hacky - we'd have clones of code in both ae/ds/singleton and gcp/ds/singleton
-Could modernize the call sites though
+- pi/airspace/memcache
+  - pushes airspace to/from memcache, as singletons
+  - provides JustAircraft{To,From}Memcache (memcache singleton "airspace")
+    - JustAircraftTo: would be called by consolidator, but now uses URL hack
+    - JustAircraftFrom: called by pi/airspace/realtime
+  - provides Everything{To,From}Memcache (memcache singleton "deduping-signatures")
+    - would be used by consolidator to roll over sig dupes between reboots, but meh
+- pi/airspace/realtime
+  - loads the "airspace" memcache singleton (via JustAircraftFrom)
+  - calls the (old ! last callsite!) ref stuff to backfill data for UI (loads from memcache)
+  - the code here is instantiated into a handler running in flightdb/app/frontend
+  - but this is a top level handler, so only has a ctx; hard to teach it about memcache singletons
 
-2. We could make just memcache.Put/Get/Delete in the provider interface
-That should be simple / small enough
-We could even fully implement the HTTP hacky thing in gcp/ds
-We could then put the singleton code in util/singleton
-We might have a strategy for other memcache usage, too (e.g. metar)
-Let's do it
-
-ARGH, this ended up all the way into pi/airspace, which does memcache things.
-It will all need to be taught about ds.DatastoreProvider junk.
-I just redid (again) the ref/ stuff, to take ds.DatastoreProvider args everywhere, but can't tell if it works yet.
-
-INSTEAD - put an explicit shium into util/ae, that trampolines into util/singleton with a 'p'
-
-Sigh, we need {Get,Set}Multi routines too.
-
-How about we just delete all the memcache, everywhere ?
-- need it for the realtime airspace. But we can do that with the
-hardhacked URL thing we have today ... and the singletonhandler thing.
-
-Too tired to make a decision. It's all annoying crap messy code.
+- If we get this pi/airspace stuff fixed up (and addTrackFragment), then we can ...
+  - remove the URL memcache junk
+  - remove the old ref implementation
+  - remove util/ae !
