@@ -42,7 +42,7 @@ func (sp SingletonProvider)singletonDSKey(c context.Context, name string) ds.Key
 func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f singleton.NewReaderFunc, ptr interface{}) error {
 	s := singleton.Singleton{}
 
-	sp.Infof(ctx, "Reading singleton '%s' into %T", name, ptr)
+	//sp.Debugf(ctx, "Reading singleton '%s' into %T", name, ptr)
 
 	if err := sp.Get(ctx, sp.singletonDSKey(ctx,name), &s); err != nil {
 		if err != ds.ErrNoSuchEntity {
