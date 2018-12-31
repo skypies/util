@@ -7,10 +7,13 @@ import(
 	"encoding/gob"
 	"fmt"
 	"io"
+	"net"
+	"time"
 
-	mclib "github.com/bradfitz/gomemcache/memcache"
 	"golang.org/x/net/context"
 
+	// Use a forked version of bradfitz's lib, so that we can pass in a dialer func
+	mclib "github.com/skypies/gomemcache/memcache"
 	"github.com/skypies/util/singleton"
 )
 
@@ -28,6 +31,10 @@ func NewProvider(servers ...string) SingletonProvider {
 	}
 
 	return sp
+}
+
+func (sp SingletonProvider)SetDialer(dialer func(network, addr string, timeout time.Duration) (net.Conn, error)) {
+	sp.Client.CustomDialer = dialer
 }
 
 func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f singleton.NewReaderFunc, obj interface{}) error {
