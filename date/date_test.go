@@ -2,8 +2,10 @@ package date
 
 // go test github.com/skypies/util/date
 
-import "testing"
-import "time"
+import(
+	"testing"
+	"time"
+)
 
 // Parse unzoned time as if it were Pacific Time, and return a zoned time object
 // Automatically decides whether to apply PDT or PST, based on the date in the string.
@@ -159,6 +161,63 @@ func TestTimeslots(t *testing.T) {
 				expected := pdtParseSecs(test.ret[i])
 				if !actual.Equal(expected) {
 					t.Errorf("[t%d] got %v, expected %v", i, actual, expected)
+				}
+			}
+		}
+	}
+}
+
+type WindowsForRangeTest struct {
+	s,e string
+	ret [][]string
+}
+
+func TestWindowsForRange(t *testing.T) {
+	tests := []WindowsForRangeTest{
+		{"01 Jan 16 11:00:00", "01 Jan 16 11:00:00", // s,e inside the same day, s not mdnight, so no windows
+			[][]string{},
+		},
+		{"01 Jan 16 00:00:00", "01 Jan 16 11:00:00", // s is midnight; claim this one day
+			[][]string{
+				{"01 Jan 16 00:00:00", "01 Jan 16 23:59:59"},
+			},
+		},
+		{"01 Jan 16 00:00:00", "01 Jan 16 23:59:59", // precise match
+			[][]string{
+				{"01 Jan 16 00:00:00", "01 Jan 16 23:59:59"},
+			},
+		},
+		{"01 Jan 16 00:00:00", "02 Jan 16 00:00:01", // e is one second in; claim two days
+			[][]string{
+				{"01 Jan 16 00:00:00", "01 Jan 16 23:59:59"},
+				{"02 Jan 16 00:00:00", "02 Jan 16 23:59:59"},
+			},
+		},
+		{"01 Jan 16 00:00:00", "05 Jan 16 00:00:00", // e is midnight, so 4th is last day
+			[][]string{
+				{"01 Jan 16 00:00:00", "01 Jan 16 23:59:59"},
+				{"02 Jan 16 00:00:00", "02 Jan 16 23:59:59"},
+				{"03 Jan 16 00:00:00", "03 Jan 16 23:59:59"},
+				{"04 Jan 16 00:00:00", "04 Jan 16 23:59:59"},
+			},
+		},
+	}
+
+	for i,test := range tests {
+		s,e := pdtParseSecs(test.s), pdtParseSecs(test.e)
+		ret := WindowsForRange(s,e)
+
+		if len(ret) != len(test.ret) {
+			t.Errorf("[t%d] got %d ranges, expected %d", i, len(ret), len(test.ret))
+		} else {
+			for j:=0; j<len(ret); j++ {
+				expectedS,expectedE := pdtParseSecs(test.ret[j][0]), pdtParseSecs(test.ret[j][1])
+				actualS,  actualE   :=                   ret[j][0],                    ret[j][1]
+				if !expectedS.Equal(actualS) {
+					t.Errorf("[t%d, r%d] start mismatch; expected %s, got %s", i, j, expectedS, actualS)
+				}
+				if !expectedE.Equal(actualE) {
+					t.Errorf("[t%d, r%d] end mismatch; expected %s, got %s", i, j, expectedE, actualE)
 				}
 			}
 		}

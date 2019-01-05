@@ -96,6 +96,17 @@ func WindowForYesterday() (start time.Time, end time.Time) {
 	return WindowForTime(NowInPdt().AddDate(0,0,-1))
 }
 
+// For each distincy day in the span (s,e] we generate a window (pair of times)
+func WindowsForRange(s,e time.Time) [][]time.Time {
+	out := [][]time.Time{}
+	// If s is first second of day, push s into previous day, so that it counts as an 'intermediate'
+	s = s.Add(-1*time.Second)
+	for _,tMidnight := range IntermediateMidnights(s,e) {
+		out = append(out, []time.Time{tMidnight, tMidnight.AddDate(0,0,1).Add(-1*time.Second) })
+	}
+	return out
+}
+
 // Returns a list of time buckets, of given duration, that the inputs span. Each bucket is
 // returned as the time-instant that begins the bucket.
 func Timeslots(s,e time.Time, d time.Duration) []time.Time {
