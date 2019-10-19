@@ -1,9 +1,11 @@
 package widget
 
 import(
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,8 +22,19 @@ func ParseRecursive(t *template.Template, dir string) *template.Template {
 		dirStack = dirStack[1:]
 
 		contents,err := ioutil.ReadDir(dir)
-		if err != nil { panic(err) }
-		
+		if err != nil {
+			str := ""
+			filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				if err != nil { return err }
+				if info.IsDir() {
+					str += info.Name() + "/\n"
+				}
+				return nil
+			})
+
+			panic(fmt.Errorf("ReadDir: %v\n\nContents of .:\n--\n%s", err, str))
+		}
+
 		for _,f := range contents {
 			if strings.HasPrefix(f.Name(), ".") {
 				continue
