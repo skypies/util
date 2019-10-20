@@ -11,8 +11,8 @@ import(
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"
 )
 
-// createAETask creates a new task in your App Engine queue.
-func createAETask(ctxIn context.Context, projectID, locationID, queueID, uri string, params url.Values) (*taskspb.Task, error) {
+// SubmitAETask submits a new task to your App Engine queue.
+func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, uri string, params url.Values) (*taskspb.Task, error) {
 	// Create a new Cloud Tasks client instance.
 	// See https://godoc.org/cloud.google.com/go/cloudtasks/apiv2
 
