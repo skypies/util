@@ -9,10 +9,11 @@ import(
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // SubmitAETask submits a new task to your App Engine queue.
-func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, uri string, params url.Values) (*taskspb.Task, error) {
+func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, wait time.Duration, uri string, params url.Values) (*taskspb.Task, error) {
 	// Create a new Cloud Tasks client instance.
 	// See https://godoc.org/cloud.google.com/go/cloudtasks/apiv2
 
@@ -29,7 +30,7 @@ func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, uri str
 	// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#CreateTaskRequest
 	req := &taskspb.CreateTaskRequest{
 		Parent: queuePath,
-		Task: &taskspb.Task{
+		Task: &taskspb.Task{			
 			// https://godoc.org/google.golang.org/genproto/googleapis/cloud/tasks/v2#AppEngineHttpRequest
 			MessageType: &taskspb.Task_AppEngineHttpRequest{
 				AppEngineHttpRequest: &taskspb.AppEngineHttpRequest{
@@ -39,6 +40,14 @@ func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, uri str
 				},
 			},
 		},
+	}
+
+	// Apply a time delay, if needed
+	if wait > 0 {
+		when := timestamp.Timestamp{
+			Seconds: time.Now().Add(wait).Unix(),
+		}
+		req.Task.ScheduleTime = &when
 	}
 	
 	createdTask, err := client.CreateTask(ctx, req)
