@@ -13,7 +13,7 @@ import(
 )
 
 // SubmitAETask submits a new task to your App Engine queue.
-func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID, wait time.Duration, uri string, params url.Values) (*taskspb.Task, error) {
+func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID string, wait time.Duration, uri string, params url.Values) (*taskspb.Task, error) {
 	// Create a new Cloud Tasks client instance.
 	// See https://godoc.org/cloud.google.com/go/cloudtasks/apiv2
 
