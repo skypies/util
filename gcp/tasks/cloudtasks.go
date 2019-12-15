@@ -12,17 +12,21 @@ import(
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// SubmitAETask submits a new task to your App Engine queue.
-func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID string, wait time.Duration, uri string, params url.Values) (*taskspb.Task, error) {
-	// Create a new Cloud Tasks client instance.
-	// See https://godoc.org/cloud.google.com/go/cloudtasks/apiv2
-
+// Create a new Cloud Tasks client instance. Should do this once per submission run,
+// not once per task submission
+// See https://godoc.org/cloud.google.com/go/cloudtasks/apiv2
+func GetClient(ctxIn context.Context) (*cloudtasks.Client, error) {
 	ctx,_ := context.WithTimeout(ctxIn, 30 * time.Second) // This is max deadline for cloudtasks API
-	client, err := cloudtasks.NewClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cloudtasks.NewClient: %v", err)
-	}
 
+	if client, err := cloudtasks.NewClient(ctx); err != nil {
+		return nil, fmt.Errorf("cloudtasks.NewClient: %v", err)
+	} else {
+		return client, nil
+	}
+}
+
+// SubmitAETask submits a new task to your App Engine queue.
+func SubmitAETask(ctxIn context.Context, client *cloudtasks.Client, projectID, locationID, queueID string, wait time.Duration, uri string, params url.Values) (*taskspb.Task, error) {
 	// Build the Task queue path.
 	queuePath := fmt.Sprintf("projects/%s/locations/%s/queues/%s", projectID, locationID, queueID)
 	
@@ -50,6 +54,8 @@ func SubmitAETask(ctxIn context.Context, projectID, locationID, queueID string, 
 		req.Task.ScheduleTime = &when
 	}
 	
+	// This needs the context, even though the client already had it - bah
+	ctx,_ := context.WithTimeout(ctxIn, 30 * time.Second) // This is max deadline for cloudtasks API
 	createdTask, err := client.CreateTask(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("cloudtasks.CreateTask: %v", err)
