@@ -34,10 +34,11 @@ func WithCtx(ch ContextHandler) BaseHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// Check for https, if we need to
-		if RequireTls && r.URL.Scheme == "http" {
-			tlsUrl := r.URL
-			tlsUrl.Scheme = "https"
-			http.Redirect(w, r, tlsUrl.String(), http.StatusFound)
+		if RequireTls && r.Header.Get("x-appengine-https") == "off" {
+			new := r.URL
+			new.Scheme = "https"
+			new.Host = r.Host // r.URL is weirdly unpopulated, so copy over the hostname
+			http.Redirect(w, r, new.String(), http.StatusFound)
 			return
 		}
 		
