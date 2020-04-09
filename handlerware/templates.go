@@ -13,21 +13,16 @@ import(
 )
 
 var(
-	// TemplateDir should contain a dir structure of templates. Setting
-	// this value is how the user switches on the templates stuff. It
-	// must be relative to the appengine module root, which is the git
-	// repo root. Setting this to a bad value, or where templates fail
-	// to parse, will cause a panic.
-	TemplateDir = ""
-
 	Templates *template.Template
 )
 
-// Caller *must* call this
-func InitTemplates() {
-	if TemplateDir != "" {
-		Templates = loadTemplates(TemplateDir)
-	}
+// InitTemplates *must* be invoked by the caller. The single arg
+// should contain a dir structure of template. It must be relative to
+// the appengine module root, which is the git repo root. Setting this
+// to a bad value, or where templates fail to parse, will cause a
+// panic.
+func InitTemplates(templateDir string) {
+	Templates = loadTemplates(templateDir)
 }
 
 // This will PANIC if the dir does not exist or is empty !
