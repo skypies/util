@@ -23,7 +23,8 @@ var(
 	Templates *template.Template
 )
 
-func init() {
+// Caller *must* call this
+func InitTemplates() {
 	if TemplateDir != "" {
 		Templates = loadTemplates(TemplateDir)
 	}

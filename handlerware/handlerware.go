@@ -49,6 +49,7 @@ import(
 func init() {
   handlerware.RequireTls = true
   handlerware.TemplateDir = "/app/frontend/web/templates" // Must be relative to module root, i.e. git repo root
+  handlerware.InitTemplates()
 
   handlerware.CtxMakerCallback = func(r *http.Request) context.Context {
     // return context.Context{}
