@@ -62,7 +62,8 @@ func NewOauth2Handler(oauth2 Oauth2er) func(w http.ResponseWriter, r *http.Reque
 				}
 			}
 
-			http.Redirect(w, r, AfterLoginRelativeUrl +"#email:"+email, http.StatusFound)
+			// http.Redirect(w, r, AfterLoginRelativeUrl +"#email:"+email, http.StatusFound)
+			http.Redirect(w, r, AfterLoginRelativeUrl, http.StatusFound)
 		}
 	}
 }
