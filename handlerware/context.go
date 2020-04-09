@@ -44,8 +44,8 @@ func WithCtx(ch ContextHandler) BaseHandler {
 		
 		ctx := CtxMakerCallback(r)
 
-		// Inject the templates (may be nil, whatever
-		ctx = context.WithValue(ctx, templatesKey, templates)
+		// Inject the templates (may be nil, whatever)
+		ctx = context.WithValue(ctx, templatesKey, Templates)
 
 		ch(ctx,w,r)
 	}

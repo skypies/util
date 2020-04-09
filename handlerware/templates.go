@@ -20,12 +20,12 @@ var(
 	// to parse, will cause a panic.
 	TemplateDir = ""
 
-	templates *template.Template
+	Templates *template.Template
 )
 
 func init() {
 	if TemplateDir != "" {
-		templates = loadTemplates(TemplateDir)
+		Templates = loadTemplates(TemplateDir)
 	}
 }
 
