@@ -16,6 +16,7 @@ require (
 	github.com/skypies/geo v0.0.0-20180901233721-9d4f211f3066 // indirect
 	github.com/skypies/gomemcache v0.0.0-20181230235850-ada73b82bad8
 	golang.org/x/net v0.0.0-20191011234655-491137f69257
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.11.0
 	google.golang.org/appengine v1.6.5
 	google.golang.org/genproto v0.0.0-20190911173649-1774047e7e51
