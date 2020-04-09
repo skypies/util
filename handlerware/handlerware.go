@@ -38,8 +38,13 @@ func WithAdmin(ch ContextHandler) BaseHandler {
 
 /*
 
-import "golang.org/x/net/context"
-import "github.com/util/handlerware"
+import(
+	"fmt"
+	"net/http"
+	"golang.org/x/net/context"
+	"github.com/skypies/util/handlerware"
+	"github.com/skypies/complaints/config"
+)
 
 func init() {
   handlerware.RequireTls = true
@@ -65,7 +70,7 @@ func init() {
   handlerware.InitGroup(handlerware.AdminGroup, "me@me.com,them@them.com")
 
   http.HandleFunc("/admin/foo", handlerware.WithAdmin(fooHandler))
-  http.HandleFunc("/admin/bar", handlerware.WithAdmin(WithoutCtx(baseHandler)))
+  http.HandleFunc("/admin/bar", handlerware.WithAdmin(handlerware.WithoutCtx(baseHandler)))
 
 
   // 3. Set up an arbitrary group, enforce membership
