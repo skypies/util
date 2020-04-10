@@ -25,6 +25,17 @@ const(
 	templatesKey
 )
 
+// IsTrustedRequest checks whether the request came from a trusted source - i.e. some other appengine
+// component or service.
+// (see https://cloud.google.com/appengine/docs/flexible/nodejs/scheduling-jobs-with-cron-yaml#validating_cron_requests,
+// https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_app_engine_task_request_headers)
+func IsTrustedRequest(r *http.Request) bool {
+	if r.Header.Get("x-appengine-cron") != ""      { return true }
+	if r.Header.Get("x-appengine-queuename") != "" { return true }
+
+	return false
+}
+
 // WithCtx is the outermost wrapper, which returns a BaseHandler
 // suitable for http.HandleFunc; the rest of the handlerware works on
 // ContextHandlers, and can be chained. This handler will enforce TLS
@@ -34,12 +45,14 @@ func WithCtx(ch ContextHandler) BaseHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// Check for https, if we need to
-		if RequireTls && r.Header.Get("x-appengine-https") == "off" {
-			new := r.URL
-			new.Scheme = "https"
-			new.Host = r.Host // r.URL is weirdly unpopulated, so copy over the hostname
-			http.Redirect(w, r, new.String(), http.StatusFound)
-			return
+		if !IsTrustedRequest(r) {
+			if RequireTls && r.Header.Get("x-appengine-https") == "off" {
+				new := r.URL
+				new.Scheme = "https"
+				new.Host = r.Host // r.URL is weirdly unpopulated, so copy over the hostname
+				http.Redirect(w, r, new.String(), http.StatusFound)
+				return
+			}
 		}
 		
 		ctx := CtxMakerCallback(r)

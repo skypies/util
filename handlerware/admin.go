@@ -27,22 +27,17 @@ func EnsureGroup(g string, ch ContextHandler) ContextHandler {
 	}
 }
 
-// EnsureAdmin validates that the request has admin privileges, and runs the handler (or returns 401).
-// Privileges are either that the user is logged in, and is an admin; or that the request came from
+// EnsureAdmin validates that the request has admin privileges, and
+// runs the handler (or returns 401). Privileges are either that the
+// user is logged in, and is an admin; or that the request came from
 // an appengine cron job or a cloud tasks queue.
-// (see https://cloud.google.com/appengine/docs/flexible/nodejs/scheduling-jobs-with-cron-yaml#validating_cron_requests,
-// https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_app_engine_task_request_headers)
 func EnsureAdmin(ch ContextHandler) ContextHandler {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		fromCron := r.Header.Get("x-appengine-cron")
-		fromCloudTasks := r.Header.Get("x-appengine-queuename")
-
 		sesh,hadSesh := GetUserSession(ctx)
 
 		haveAdmin := false
 		switch {
-		case fromCron != "":                                haveAdmin = true
-		case fromCloudTasks != "":                          haveAdmin = true
+		case IsTrustedRequest(r):                           haveAdmin = true
 		case hadSesh && IsInGroup(AdminGroup, sesh.Email):  haveAdmin = true
 		default:                                            haveAdmin = false
 		}
