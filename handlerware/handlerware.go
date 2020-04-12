@@ -43,12 +43,11 @@ import(
 	"net/http"
 	"golang.org/x/net/context"
 	"github.com/skypies/util/handlerware"
-	"github.com/skypies/complaints/config"
 )
 
 func init() {
   handlerware.RequireTls = true
-  handlerware.InitTemplates("/app/frontend/web/templates") // Must be relative to module root, i.e. git repo root
+  handlerware.InitTemplates("app/frontend/web/templates") // Must be relative to module root, i.e. git repo root
 
   handlerware.CtxMakerCallback = func(r *http.Request) context.Context {
     // return context.Context{}
