@@ -10,6 +10,7 @@ import(
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -88,6 +89,7 @@ func (goauth2 GoogleOauth2)GetLogoutUrl(w http.ResponseWriter, r *http.Request) 
 func (goauth2 GoogleOauth2)CallbackToEmail(r *http.Request) (string, error) {
 	// Read oauthState from Cookie
 	if oauthState,err := r.Cookie("oauthstate"); err != nil {
+		log.Printf("no oauth google cookie: %v", err)
 		return "", fmt.Errorf("no oauth google cookie: %v", err)
 	} else if r.FormValue("state") != oauthState.Value {
 		return "", fmt.Errorf("invalid oauth google state")
