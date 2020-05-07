@@ -11,6 +11,13 @@ import(
 	gsessions "github.com/gorilla/sessions"
 )
 
+// FIXME: logging needs a real fix
+func logPrintf(r *http.Request, fmtstr string, varargs ...interface{}) {
+	payload := fmt.Sprintf(fmtstr, varargs...)
+	prefix := fmt.Sprintf("ip:%s", r.Header.Get("x-appengine-user-ip"))
+	log.Printf("%s %s", prefix, payload)
+}
+
 var(
 	// CookieName is what the calling app wants its session token to be kept in.
 	CookieName = "choc_chip"
@@ -65,7 +72,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 			cookies[c.Name] = c.Value
 		}
 		if val,exists := cookies[crumbCookieName]; exists {
-			log.Printf("%s in : %s", crumbCookieName, val)
+			logPrintf(r, "%s in : %s", crumbCookieName, val)
 		} 
 
 		handler := fallback
@@ -79,7 +86,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 
 			} else {
 				if err != nil { log.Printf("req2session err: " + err.Error()) }
-				log.Printf("crumbs: " + crumbs.String())
+				logPrintf(r, "crumbs: " + crumbs.String())
 			}
 
 		} else {
@@ -96,7 +103,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		http.SetCookie(w, &cookie)
 
 		if handler == nil {
-			log.Printf("WithSession had no session, no NoSessionHandler")
+			logPrintf(r, "WithSession had no session, no NoSessionHandler")
 			http.Error(w, fmt.Sprintf("no session, no NoSessionHandler (%s)", r.URL), http.StatusInternalServerError)
 			return
 		}

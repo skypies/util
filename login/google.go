@@ -37,6 +37,12 @@ type GoogleOauth2 struct {
 }
 func (g GoogleOauth2)Name() string { return "google" }
 
+func logPrintf(r *http.Request, fmtstr string, varargs ...interface{}) {
+	payload := fmt.Sprintf(fmtstr, varargs...)
+	prefix := fmt.Sprintf("ip:%s", r.Header.Get("x-appengine-user-ip"))
+	log.Printf("%s %s", prefix, payload)
+}
+
 // {{{ NewGoogleOauth2
 
 func NewGoogleOauth2() GoogleOauth2 {
@@ -89,10 +95,11 @@ func (goauth2 GoogleOauth2)GetLogoutUrl(w http.ResponseWriter, r *http.Request) 
 func (goauth2 GoogleOauth2)CallbackToEmail(r *http.Request) (string, error) {
 	// Read oauthState from Cookie
 	if oauthState,err := r.Cookie("oauthstate"); err != nil {
-		log.Printf("no oauth google cookie: %v", err)
+		logPrintf(r, "no oauth google cookie: %v", err)
 		return "", fmt.Errorf("no oauth google cookie: %v", err)
 	} else if r.FormValue("state") != oauthState.Value {
-		return "", fmt.Errorf("invalid oauth google state")
+		logPrintf(r, "invalid oauth google state:  (URL %q, cookie %q)", r.FormValue("state"), oauthState.Value)
+		return "", fmt.Errorf("invalid oauth google state (URL %q, cookie %q)", r.FormValue("state"), oauthState.Value)
 	}
 
 	email,err := goauth2.getEmailFromGoogle(r.FormValue("code"))
