@@ -85,7 +85,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 				handler = ch
 
 			} else {
-				if err != nil { log.Printf("req2session err: " + err.Error()) }
+				if err != nil { logPrintf(r, "req2session err: " + err.Error()) }
 				logPrintf(r, "crumbs: " + crumbs.String())
 			}
 
@@ -94,7 +94,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		}
 
 		// Before invoking final handler, log breadcrumb trail, and stash in cookie
-		log.Printf("%s out: %s", crumbCookieName, crumbs)
+		logPrintf(r, "%s out: %s", crumbCookieName, crumbs)
 		cookie := http.Cookie{
 			Name: crumbCookieName,
 			Value: crumbs.String(),
