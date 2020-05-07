@@ -4,6 +4,7 @@ import(
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"golang.org/x/net/context"
@@ -92,7 +93,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		} else {
 			crumbs.Add("NoMainCookie")
 		}
-
+		
 		// Before invoking final handler, log breadcrumb trail, and stash in cookie
 		logPrintf(r, "%s out: %s", crumbCookieName, crumbs)
 		cookie := http.Cookie{
@@ -102,6 +103,9 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		}
 		http.SetCookie(w, &cookie)
 
+		reqLog,_ := httputil.DumpRequest(r,true)
+		logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
+		
 		if handler == nil {
 			logPrintf(r, "WithSession had no session, no NoSessionHandler")
 			http.Error(w, fmt.Sprintf("no session, no NoSessionHandler (%s)", r.URL), http.StatusInternalServerError)
