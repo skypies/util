@@ -12,6 +12,7 @@ import(
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"time"
 
@@ -93,12 +94,16 @@ func (goauth2 GoogleOauth2)GetLogoutUrl(w http.ResponseWriter, r *http.Request) 
 // {{{ goauth2.CallbackToEmail
 
 func (goauth2 GoogleOauth2)CallbackToEmail(r *http.Request) (string, error) {
+	reqLog,_ := httputil.DumpRequest(r,true)
+
 	// Read oauthState from Cookie
 	if oauthState,err := r.Cookie("oauthstate"); err != nil {
 		logPrintf(r, "no oauth google cookie: %v", err)
+		logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
 		return "", fmt.Errorf("no oauth google cookie: %v", err)
 	} else if r.FormValue("state") != oauthState.Value {
 		logPrintf(r, "invalid oauth google state:  (URL %q, cookie %q)", r.FormValue("state"), oauthState.Value)
+		logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
 		return "", fmt.Errorf("invalid oauth google state (URL %q, cookie %q)", r.FormValue("state"), oauthState.Value)
 	}
 
