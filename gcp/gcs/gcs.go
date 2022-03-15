@@ -65,8 +65,12 @@ func OpenRW(ctx context.Context, bucketname string, filename string, contentType
 		return nil, fmt.Errorf("GCS client.Bucket() was nil")
 	}
 
-	handle.Reader = bucket.Object(filename).NewReader(ctx)
+	rdr, err := bucket.Object(filename).NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("bucket=%s,file=%s./NewReader: %v\n", bucketname, filename, err)
+	}
 
+	handle.Reader = rdr
 	handle.Writer = bucket.Object(filename).NewWriter(ctx)
 	handle.Writer.ContentType = contentType //"text/plain" // CSV?
 	
