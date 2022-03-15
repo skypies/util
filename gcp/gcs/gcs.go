@@ -16,7 +16,9 @@ type RWHandle struct {
 
 // IMPORTANT - if you don't call this (and see it return nil), your data is likely lost
 func (h *RWHandle)Close() error {
-	h.Reader.Close()
+	if h.Reader != nil {
+		h.Reader.Close()
+	}
 
 	if err := h.Writer.Close(); err != nil { return err }
 	if err := h.Client.Close(); err != nil { return err }
