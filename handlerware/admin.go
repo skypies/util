@@ -19,6 +19,7 @@ func EnsureGroup(g string, ch ContextHandler) ContextHandler {
 
 		} else {
 			errstr :=  "This URL requires you to be logged in"
+			errstr += fmt.Sprintf("{{ %#v }} %v\n", sesh, hadSesh)
 			if hadSesh {
 				errstr = fmt.Sprintf("This URL requires you to be in the group %q", g)
 			}
@@ -44,6 +45,7 @@ func EnsureAdmin(ch ContextHandler) ContextHandler {
 
 		if !haveAdmin {
 			errstr := "This URL requires you to be logged in"
+			errstr += fmt.Sprintf("{{ %#v }} %v\n", sesh, hadSesh)
 			if hadSesh {
 				errstr = "This URL requires admin access"
 			}

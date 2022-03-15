@@ -9,17 +9,23 @@ import (
 )
 
 type RWHandle struct {
+ 	Reader *storage.Reader
 	Writer *storage.Writer
 	Client *storage.Client
 }
 
 // IMPORTANT - if you don't call this (and see it return nil), your data is likely lost
 func (h *RWHandle)Close() error {
+	h.Reader.Close()
+
 	if err := h.Writer.Close(); err != nil { return err }
 	if err := h.Client.Close(); err != nil { return err }
 	return nil
 }
 
+func (h *RWHandle)IOReader() io.Reader {
+	return io.Reader(h.Reader)
+}
 func (h *RWHandle)IOWriter() io.Writer {
 	return io.Writer(h.Writer)
 }
@@ -58,6 +64,8 @@ func OpenRW(ctx context.Context, bucketname string, filename string, contentType
 	if bucket == nil {
 		return nil, fmt.Errorf("GCS client.Bucket() was nil")
 	}
+
+	handle.Reader = bucket.Object(filename).NewReader(ctx)
 
 	handle.Writer = bucket.Object(filename).NewWriter(ctx)
 	handle.Writer.ContentType = contentType //"text/plain" // CSV?
