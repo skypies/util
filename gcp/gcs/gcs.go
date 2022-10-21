@@ -80,3 +80,17 @@ func OpenRW(ctx context.Context, bucketname string, filename string, contentType
 	
 	return &handle, nil
 }
+
+func (h *RWHandle)ToReader(ctx context.Context, bucketname, filename string) (io.Reader, error) {
+	bucket := h.Client.Bucket(bucketname)
+	if bucket == nil {
+		return nil, fmt.Errorf("GCS client.Bucket() was nil")
+	}
+
+	r,err := bucket.Object(filename).NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.Reader(r), nil
+}
