@@ -20,8 +20,16 @@ func (h *RWHandle)Close() error {
 		h.Reader.Close()
 	}
 
-	if err := h.Writer.Close(); err != nil { return err }
-	if err := h.Client.Close(); err != nil { return err }
+	if h.Writer != nil {
+		if err := h.Writer.Close(); err != nil {
+			return err
+		}
+	}
+
+	if err := h.Client.Close(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -53,6 +61,7 @@ func Exists(ctx context.Context, bucketname string, filename string) (bool,error
 	}
 }
 
+// This appears to truncate contents :/
 func OpenRW(ctx context.Context, bucketname string, filename string, contentType string) (*RWHandle, error) {
 	handle := RWHandle{}
 	if c, err := storage.NewClient(ctx); err != nil {
@@ -80,6 +89,31 @@ func OpenRW(ctx context.Context, bucketname string, filename string, contentType
 	
 	return &handle, nil
 }
+
+
+func OpenR(ctx context.Context, bucketname string, filename string) (*RWHandle, error) {
+	handle := RWHandle{}
+	if c, err := storage.NewClient(ctx); err != nil {
+		return nil, err
+	} else {
+		handle.Client = c
+	}
+
+	bucket := handle.Client.Bucket(bucketname)
+	if bucket == nil {
+		return nil, fmt.Errorf("GCS client.Bucket() was nil")
+	}
+
+	// NOTE - this may be nil, if file does not yet exist
+	rdr, err := bucket.Object(filename).NewReader(ctx)
+	handle.Reader = rdr
+	if err != nil {
+		return nil, fmt.Errorf("gcs.OpenR: bucket=%s,file=%s./NewReader: %v\n", bucketname, filename, err)
+	}
+
+	return &handle, nil
+}
+
 
 func (h *RWHandle)ToReader(ctx context.Context, bucketname, filename string) (io.Reader, error) {
 	bucket := h.Client.Bucket(bucketname)
