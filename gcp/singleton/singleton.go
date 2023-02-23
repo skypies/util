@@ -81,7 +81,6 @@ func (sp SingletonProvider)ReadSingleton(ctx context.Context, name string, f sin
 	return nil
 }
 
-
 func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, f singleton.NewWriteCloserFunc, ptr interface{}) error {
 	var buf bytes.Buffer
 	var writer io.Writer
@@ -116,4 +115,6 @@ func (sp SingletonProvider)WriteSingleton(ctx context.Context, name string, f si
 	return err
 }
 
-
+func (sp SingletonProvider)DeleteSingleton(ctx context.Context, name string) error {
+	return sp.Delete(ctx, sp.singletonDSKey(ctx,name))
+}

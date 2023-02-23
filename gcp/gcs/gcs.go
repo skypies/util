@@ -6,9 +6,11 @@ import (
 	"io"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 type RWHandle struct {
+	Bucket *storage.BucketHandle
  	Reader *storage.Reader
 	Writer *storage.Writer
 	Client *storage.Client
@@ -59,6 +61,31 @@ func Exists(ctx context.Context, bucketname string, filename string) (bool,error
 	} else {
 		return false,err
 	}
+}
+
+// OpenBucket returns a handle that can read a bucket, but the bucket must already exist.
+func ListBucket(ctx context.Context, bucketname string) ([]string, error) {
+	contents := []string{}
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket := client.Bucket(bucketname)
+	it := bucket.Objects(ctx, &storage.Query{Prefix: ""})
+	for {
+    attrs, err := it.Next()
+    if err == iterator.Done {
+			break
+    }
+    if err != nil {
+			return []string{}, fmt.Errorf("bucket list iterator(%s): %v\n", bucketname, err)
+    }
+    contents = append(contents, attrs.Name)
+	}
+
+	return contents, nil
 }
 
 // This appears to truncate contents :/
