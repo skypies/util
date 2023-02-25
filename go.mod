@@ -17,7 +17,7 @@ require (
 	github.com/skypies/geo v0.0.0-20180901233721-9d4f211f3066 // indirect
 	github.com/skypies/gomemcache v0.0.0-20181230235850-ada73b82bad8
 	go.opencensus.io v0.22.4 // indirect
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.3.3 // indirect
