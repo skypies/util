@@ -19,5 +19,8 @@ require (
 	golang.org/x/oauth2 v0.4.0
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
-	google.golang.org/grpc v1.53.0
+	google.golang.org/grpc v1.53.0\
+	go.opencensus.io v0.22.4 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.3.8 // indirect
 )
