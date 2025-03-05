@@ -4,7 +4,7 @@ import(
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
+	//"net/http/httputil"
 	"time"
 
 	"golang.org/x/net/context"
@@ -72,15 +72,17 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 			crumbs.Add("C:"+c.Name)
 			cookies[c.Name] = c.Value
 		}
-		if val,exists := cookies[crumbCookieName]; exists {
-			logPrintf(r, "%s in : %s", crumbCookieName, val)
-		} 
+		//if val,exists := cookies[crumbCookieName]; exists {
+		//	logPrintf(r, "%s in : %s", crumbCookieName, val)
+		//}
 
 		handler := fallback
+		user := "??"
 
 		if _,exists := cookies[CookieName]; exists {
 			sesh,err := req2Session(r, &crumbs)
 			if err == nil && !sesh.IsEmpty() {
+				user = sesh.Email
 				// Stash the session in the context, and move on to the proper handler
 				ctx = setUserSession(ctx, sesh)
 				handler = ch
@@ -95,7 +97,7 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		}
 		
 		// Before invoking final handler, log breadcrumb trail, and stash in cookie
-		logPrintf(r, "%s out: %s", crumbCookieName, crumbs)
+		//logPrintf(r, "%s out: %s", crumbCookieName, crumbs)
 		cookie := http.Cookie{
 			Name: crumbCookieName,
 			Value: crumbs.String(),
@@ -103,14 +105,16 @@ func EnsureSessionOrFallback(ch,fallback ContextHandler) ContextHandler {
 		}
 		http.SetCookie(w, &cookie)
 
-		reqLog,_ := httputil.DumpRequest(r,true)
-		logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
+		//reqLog,_ := httputil.DumpRequest(r,true)
+		//logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
 		
 		if handler == nil {
 			logPrintf(r, "WithSession had no session, no NoSessionHandler")
 			http.Error(w, fmt.Sprintf("no session, no NoSessionHandler (%s)", r.URL), http.StatusInternalServerError)
 			return
 		}
+
+		logPrintf(r, "userSession(%s): %s", user, r.URL)
 
 		handler(ctx, w, r)
 	}
