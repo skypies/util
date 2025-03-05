@@ -98,8 +98,8 @@ func (goauth2 GoogleOauth2)CallbackToEmail(r *http.Request) (string, error) {
 
 	// Read oauthState from Cookie
 	if oauthState,err := r.Cookie("oauthstate"); err != nil {
-		logPrintf(r, "no oauth google cookie: %v", err)
-		logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
+		//logPrintf(r, "no oauth google cookie: %v", err)
+		//logPrintf(r, "HTTP req>>>>\n%s====\n", reqLog)
 		return "", fmt.Errorf("no oauth google cookie: %v", err)
 	} else if r.FormValue("state") != oauthState.Value {
 		logPrintf(r, "invalid oauth google state:  (URL %q, cookie %q)", r.FormValue("state"), oauthState.Value)
