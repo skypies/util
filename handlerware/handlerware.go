@@ -2,7 +2,7 @@ package handlerware
 
 import(
 	"net/http"
-	"golang.org/x/net/context"
+	"context"
 )
 
 type BaseHandler    func(http.ResponseWriter, *http.Request)
@@ -41,7 +41,7 @@ func WithAdmin(ch ContextHandler) BaseHandler {
 import(
 	"fmt"
 	"net/http"
-	"golang.org/x/net/context"
+	"context"
 	"github.com/skypies/util/handlerware"
 )
 

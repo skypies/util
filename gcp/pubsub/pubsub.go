@@ -2,7 +2,7 @@ package pubsub
 
 import (
 	"bytes"
-	"golang.org/x/net/context"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"time"

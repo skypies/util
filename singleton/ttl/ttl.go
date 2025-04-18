@@ -8,7 +8,7 @@ import(
 	"reflect"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/skypies/util/singleton"
 )

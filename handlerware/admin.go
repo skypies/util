@@ -4,7 +4,7 @@ import(
 	"fmt"
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 // EnsureGroup asserts that the user is logged in, and is a member of

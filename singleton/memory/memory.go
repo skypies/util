@@ -5,7 +5,7 @@ package memory
 import(
 	"fmt"
 	"reflect"
-	"golang.org/x/net/context"
+	"context"
 	"github.com/skypies/util/singleton"
 )
 

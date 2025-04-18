@@ -5,7 +5,7 @@ package handlerware
 import(
 	"net/http"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 type CtxMaker       func(*http.Request) context.Context

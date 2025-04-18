@@ -5,7 +5,7 @@ import(
 	"net/url"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 	taskspb "google.golang.org/genproto/googleapis/cloud/tasks/v2"

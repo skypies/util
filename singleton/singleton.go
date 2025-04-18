@@ -5,7 +5,7 @@ import(
 	"errors"
 	"io"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 /*

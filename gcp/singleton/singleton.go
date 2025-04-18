@@ -19,7 +19,7 @@ import(
 	"encoding/gob"
 	"io"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/skypies/util/gcp/ds"
 

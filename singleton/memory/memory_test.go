@@ -5,7 +5,7 @@ package memory
 import (
 	"testing"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/skypies/util/singleton"
 )

@@ -10,7 +10,7 @@ import(
 	"net"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	// Use a forked version of bradfitz's lib, so that we can pass in a dialer func
 	mclib "github.com/skypies/gomemcache/memcache"

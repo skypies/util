@@ -7,7 +7,7 @@ import(
 	//"net/http/httputil"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	gsessions "github.com/gorilla/sessions"
 )

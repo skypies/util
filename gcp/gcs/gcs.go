@@ -1,7 +1,7 @@
 package gcs
 
 import (
-	"golang.org/x/net/context"
+	"context"
 	"fmt"
 	"io"
 
