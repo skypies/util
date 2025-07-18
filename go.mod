@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/skypies/adsb v0.0.0-20170701162657-223af14f06df
 	github.com/skypies/gomemcache v0.0.0-20181230235850-ada73b82bad8
-	golang.org/x/oauth2 v0.25.0
+	golang.org/x/oauth2 v0.27.0
 	google.golang.org/api v0.169.0
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9
 	google.golang.org/grpc v1.71.1
